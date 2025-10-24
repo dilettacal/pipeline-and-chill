@@ -1,6 +1,6 @@
 # ChillFlow Platform - Development Makefile
 
-.PHONY: help up down up-observability clean logs status setup-env
+.PHONY: help up down up-observability clean logs status setup-env test test-unit test-infra test-all
 
 help: ## Show this help message
 	@echo "ChillFlow Platform Development Commands:"
@@ -64,6 +64,23 @@ status: ## Show infrastructure status
 	@echo ""
 	@echo "📊 Prometheus:"
 	@curl -s http://localhost:9090/-/healthy >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"
+
+test: ## Run unit tests (default)
+	@echo "🧪 Running unit tests..."
+	uv run pytest tests/unit/ -v
+
+test-unit: ## Run unit tests only
+	@echo "🧪 Running unit tests..."
+	uv run pytest tests/ -m unit -v
+
+test-infra: ## Run infrastructure tests (requires Docker)
+	@echo "🧪 Running infrastructure tests..."
+	@echo "⚠️  Make sure infrastructure is running: make up"
+	uv run pytest tests/infrastructure/ -m infrastructure -v
+
+test-all: ## Run all tests (unit + infrastructure)
+	@echo "🧪 Running all tests..."
+	uv run pytest tests/ -v
 
 setup-env: ## Create .env file from template
 	@echo "📝 Setting up environment file..."
