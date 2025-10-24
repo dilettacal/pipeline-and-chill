@@ -152,3 +152,27 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Project specific
+# Ignore data files but keep .gitkeep files
+data/raw/**/*.parquet
+data/raw/**/*.csv
+data/raw/**/*.json
+data/raw/**/*.txt
+data/raw/**/*.zip
+data/raw/**/*.gz
+data/raw/**/*.pdf
+data/raw/**/*.shp
+data/raw/**/*.shx
+data/raw/**/*.prj
+data/raw/**/*.cpg
+data/raw/**/*.dbf
+data/raw/**/*.prj
+data/raw/**/*.cpg
+data/raw/**/*.dbf
+data/raw/**/*.xml
+data/raw/**/*.sbx
+data/raw/**/*.sbn
+data/processed/
+data/curated/
+!data/**/.gitkeep
