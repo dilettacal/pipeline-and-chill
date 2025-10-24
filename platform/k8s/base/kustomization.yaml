@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base Kubernetes manifests for ChillFlow platform infrastructure
+# This is the foundation that all environments build upon
+
+resources:
+  # Database
+  - postgres.yaml
+  
+  # Cache
+  - redis.yaml
+  
+  # Message streaming
+  - kafka.yaml
+  
+  # Monitoring
+  - monitoring.yaml
+  
+  # Ingress
+  - ingress.yaml
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/name: chillflow-platform
+  app.kubernetes.io/part-of: chillflow
+
+# Namespace
+namespace: chillflow-platform

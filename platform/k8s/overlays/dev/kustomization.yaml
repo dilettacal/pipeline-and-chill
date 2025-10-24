@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Development environment overlay
+# Overrides base configuration for development needs
+
+resources:
+  - ../../base
+
+# Development-specific patches
+patchesStrategicMerge:
+  - postgres-patch.yaml
+  - redis-patch.yaml
+  - kafka-patch.yaml
+
+# Development-specific configurations
+configMapGenerator:
+  - name: chillflow-config
+    literals:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql://dev:dev@postgres:5432/chillflow
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# Development namespace
+namespace: chillflow-dev
