@@ -3,6 +3,18 @@ name = "pipeline-and-chill"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "chillflow-core",
     "pandas>=2.3.3",
     "pyarrow>=22.0.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
 ]
+
+[tool.uv.workspace]
+members = [
+    "backend/chillflow-core",
+]
+
+[tool.uv.sources]
+chillflow-core = { workspace = true }
