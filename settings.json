@@ -1,0 +1,195 @@
+{
+  "project": {
+    "name": "pipeline-and-chill",
+    "version": "1.0.0",
+    "description": "A modern data pipeline with streaming capabilities"
+  },
+  "plugins": {
+    "makefile": {
+      "enabled": true,
+      "version": "4.3",
+      "features": [
+        "parallel_builds",
+        "conditional_execution",
+        "variable_substitution",
+        "target_dependencies"
+      ],
+      "targets": {
+        "build": "Build all components",
+        "test": "Run test suite",
+        "deploy": "Deploy to staging/production",
+        "clean": "Clean build artifacts",
+        "dev": "Start development environment",
+        "logs": "View application logs"
+      }
+    },
+    "jupyter": {
+      "enabled": true,
+      "version": "3.0.0",
+      "kernels": [
+        "python3",
+        "pyspark",
+        "sql"
+      ],
+      "extensions": [
+        "jupyterlab-git",
+        "jupyterlab-lsp",
+        "jupyterlab-widgets",
+        "jupyterlab-plotly",
+        "jupyterlab-sql"
+      ],
+      "notebooks": {
+        "data_exploration": "notebooks/exploration/",
+        "data_analysis": "notebooks/analysis/",
+        "model_training": "notebooks/models/",
+        "visualization": "notebooks/viz/"
+      }
+    },
+    "postgresql": {
+      "enabled": true,
+      "version": "15.4",
+      "configuration": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "pipeline_chill",
+        "username": "pipeline_user",
+        "password": "${POSTGRES_PASSWORD}",
+        "ssl_mode": "prefer",
+        "connection_pool_size": 20,
+        "max_connections": 100
+      },
+      "extensions": [
+        "uuid-ossp",
+        "pg_stat_statements",
+        "pg_trgm",
+        "btree_gin",
+        "btree_gist"
+      ],
+      "schemas": [
+        "raw_data",
+        "processed_data",
+        "analytics",
+        "metadata"
+      ]
+    },
+    "redis": {
+      "enabled": true,
+      "version": "7.0.12",
+      "configuration": {
+        "host": "localhost",
+        "port": 6379,
+        "password": "${REDIS_PASSWORD}",
+        "database": 0,
+        "max_connections": 50,
+        "timeout": 5,
+        "retry_on_timeout": true
+      },
+      "use_cases": [
+        "caching",
+        "session_storage",
+        "message_broker",
+        "rate_limiting",
+        "distributed_locks"
+      ],
+      "data_structures": [
+        "strings",
+        "hashes",
+        "lists",
+        "sets",
+        "sorted_sets",
+        "streams"
+      ]
+    },
+    "kafka": {
+      "enabled": true,
+      "version": "3.5.0",
+      "configuration": {
+        "bootstrap_servers": "localhost:9092",
+        "security_protocol": "PLAINTEXT",
+        "sasl_mechanism": "PLAIN",
+        "sasl_username": "${KAFKA_USERNAME}",
+        "sasl_password": "${KAFKA_PASSWORD}",
+        "acks": "all",
+        "retries": 3,
+        "batch_size": 16384,
+        "linger_ms": 5,
+        "buffer_memory": 33554432
+      },
+      "topics": {
+        "raw_events": {
+          "partitions": 3,
+          "replication_factor": 1,
+          "retention_ms": 604800000
+        },
+        "processed_events": {
+          "partitions": 3,
+          "replication_factor": 1,
+          "retention_ms": 1209600000
+        },
+        "analytics_events": {
+          "partitions": 5,
+          "replication_factor": 1,
+          "retention_ms": 2592000000
+        }
+      },
+      "consumers": {
+        "event_processor": {
+          "group_id": "event-processor-group",
+          "auto_offset_reset": "earliest",
+          "enable_auto_commit": true
+        },
+        "analytics_processor": {
+          "group_id": "analytics-processor-group",
+          "auto_offset_reset": "latest",
+          "enable_auto_commit": false
+        }
+      }
+    }
+  },
+  "development": {
+    "docker_compose": {
+      "enabled": true,
+      "services": [
+        "postgresql",
+        "redis",
+        "kafka",
+        "zookeeper",
+        "jupyter"
+      ]
+    },
+    "environment": {
+      "development": {
+        "postgres_password": "dev_password",
+        "redis_password": "dev_password",
+        "kafka_username": "dev_user",
+        "kafka_password": "dev_password"
+      },
+      "staging": {
+        "postgres_password": "${STAGING_POSTGRES_PASSWORD}",
+        "redis_password": "${STAGING_REDIS_PASSWORD}",
+        "kafka_username": "${STAGING_KAFKA_USERNAME}",
+        "kafka_password": "${STAGING_KAFKA_PASSWORD}"
+      },
+      "production": {
+        "postgres_password": "${PROD_POSTGRES_PASSWORD}",
+        "redis_password": "${PROD_REDIS_PASSWORD}",
+        "kafka_username": "${PROD_KAFKA_USERNAME}",
+        "kafka_password": "${PROD_KAFKA_PASSWORD}"
+      }
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "tools": [
+      "prometheus",
+      "grafana",
+      "jaeger"
+    ],
+    "metrics": [
+      "kafka_consumer_lag",
+      "postgres_connection_pool",
+      "redis_memory_usage",
+      "jupyter_notebook_sessions"
+    ]
+  }
+}
