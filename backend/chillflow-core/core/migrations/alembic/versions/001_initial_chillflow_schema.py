@@ -102,6 +102,40 @@ def upgrade() -> None:
         "idx_complete_trip_vendor", "complete_trip", ["vendor_id"], schema="stg"
     )
 
+    # Create mart.zone_hourly_kpis table
+    op.create_table(
+        "zone_hourly_kpis",
+        sa.Column("zone_id", sa.Integer(), nullable=False),
+        sa.Column("hour_ts", sa.TIMESTAMP(), nullable=False),
+        sa.Column("trips", sa.Integer(), nullable=False, default=0),
+        sa.Column("avg_fare", sa.DECIMAL(precision=10, scale=2), nullable=True),
+        sa.Column("avg_tip", sa.DECIMAL(precision=10, scale=2), nullable=True),
+        sa.Column("avg_speed_kmh", sa.DECIMAL(precision=8, scale=2), nullable=True),
+        sa.Column("avg_distance_km", sa.DECIMAL(precision=8, scale=2), nullable=True),
+        sa.Column("avg_duration_min", sa.DECIMAL(precision=8, scale=2), nullable=True),
+        sa.Column("pct_card", sa.DECIMAL(precision=5, scale=2), nullable=True),
+        sa.Column("outlier_rate", sa.DECIMAL(precision=5, scale=2), nullable=True),
+        sa.Column("unique_vehicles", sa.Integer(), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.TIMESTAMP(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
+        sa.PrimaryKeyConstraint("zone_id", "hour_ts"),
+        sa.ForeignKeyConstraint(
+            ["zone_id"],
+            ["dim.zone.zone_id"],
+        ),
+        schema="mart",
+    )
+
 
 def downgrade() -> None:
     """Drop initial ChillFlow database schema."""
@@ -115,6 +149,7 @@ def downgrade() -> None:
     )
 
     # Drop tables
+    op.drop_table("zone_hourly_kpis", schema="mart")
     op.drop_table("complete_trip", schema="stg")
     op.drop_table("zone", schema="dim")
 

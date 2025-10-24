@@ -73,15 +73,18 @@ class CompleteTripSchema(BaseModel):
     @field_validator("total_amount")
     @classmethod
     def validate_total_amount(cls, v, info):
-        """Validate total amount consistency."""
-        if v is not None and "fare_amount" in info.data and "tip_amount" in info.data:
-            fare = info.data.get("fare_amount", 0) or 0
-            tip = info.data.get("tip_amount", 0) or 0
-            expected_total = fare + tip
-            if abs(v - expected_total) > 0.01:  # Allow small floating point differences
-                raise ValueError(
-                    f"Total amount {v} does not match fare + tip: {expected_total}"
-                )
+        """Validate total amount consistency.
+
+        Note: NYC taxi data includes additional fees (tolls, surcharges, etc.)
+        that are not captured in fare_amount + tip_amount, so we only validate
+        that total_amount is reasonable (not negative and not extremely high).
+        """
+        if v is not None:
+            # Basic sanity checks
+            if v < 0:
+                raise ValueError("Total amount cannot be negative")
+            if v > 1000:  # Reasonable upper bound for taxi fare
+                raise ValueError(f"Total amount {v} seems unreasonably high")
         return v
 
     @property

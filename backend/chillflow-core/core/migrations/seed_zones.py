@@ -21,7 +21,7 @@ def seed_zones():
     )
 
     # Path to CSV file
-    project_root = Path(__file__).parent.parent.parent
+    project_root = Path(__file__).parent.parent.parent.parent.parent
     csv_path = project_root / "data" / "raw" / "zones" / "taxi_zone_lookup.csv"
 
     if not csv_path.exists():

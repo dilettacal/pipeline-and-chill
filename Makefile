@@ -1,6 +1,6 @@
 # ChillFlow Platform - Development Makefile
 
-.PHONY: help up down up-observability clean logs status setup-env test test-unit test-infra test-all
+.PHONY: help up down up-observability clean logs status setup-env test test-unit test-infra test-all curate-all download-data
 
 help: ## Show this help message
 	@echo "ChillFlow Platform Development Commands:"
@@ -92,3 +92,31 @@ setup-env: ## Create .env file from template
 		echo "⚠️  .env file already exists at platform/compose/.env"; \
 		echo "📝 Edit it manually if you need to change settings"; \
 	fi
+
+# ========================================================================
+# Data Management Commands
+# ========================================================================
+
+download-data: ## Download NYC taxi data, reference files, and seed zones
+	@echo "📥 Downloading NYC taxi data and reference files..."
+	@if [ -f scripts/data-management/download_nyc_data.sh ]; then \
+		chmod +x scripts/data-management/download_nyc_data.sh; \
+		./scripts/data-management/download_nyc_data.sh; \
+	else \
+		echo "❌ Download script not found. Please ensure scripts/data-management/download_nyc_data.sh exists"; \
+		exit 1; \
+	fi
+	@echo "🌍 Seeding taxi zones into database..."
+	@echo "⚠️  Make sure infrastructure is running: make up"
+	uv run python backend/chillflow-core/core/migrations/seed_zones.py
+	@echo "✅ Data download and zone seeding complete!"
+
+curate-all: ## Curate all available raw data (dynamically discovered)
+	@echo "🔄 Curating all available raw data..."
+	@if [ ! -d "data/raw/yellow" ]; then \
+		echo "❌ No raw data found. Download data first: make download-data"; \
+		exit 1; \
+	fi
+	uv run python scripts/data-management/curate_all_data.py --data-root data
+	@echo "🎉 All data curation complete!"
+	@echo "📊 Curated data available in: data/curated/yellow/"

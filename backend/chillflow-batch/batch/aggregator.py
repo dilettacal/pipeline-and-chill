@@ -197,9 +197,15 @@ class BatchAggregator:
             COUNT(*) AS trips,
             AVG(fare_amount) AS avg_fare,
             AVG(tip_amount) AS avg_tip,
-            AVG(avg_speed_kmh) AS avg_speed_kmh,
-            AVG(distance_km) AS avg_distance_km,
-            AVG(duration_min) AS avg_duration_min,
+            AVG(
+                CASE 
+                    WHEN EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) > 0 
+                    THEN (trip_distance * 1.60934) / (EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) / 3600)
+                    ELSE NULL 
+                END
+            ) AS avg_speed_kmh,
+            AVG(trip_distance * 1.60934) AS avg_distance_km,
+            AVG(EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) / 60) AS avg_duration_min,
             100.0 * SUM(CASE WHEN payment_type = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) AS pct_card,
             COUNT(DISTINCT vehicle_id_h) AS unique_vehicles,
             NOW() AS created_at
