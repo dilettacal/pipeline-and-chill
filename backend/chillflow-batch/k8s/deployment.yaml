@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chillflow-batch
+  labels:
+    app: chillflow-batch
+    component: batch-processing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chillflow-batch
+  template:
+    metadata:
+      labels:
+        app: chillflow-batch
+        component: batch-processing
+    spec:
+      containers:
+      - name: chillflow-batch
+        image: chillflow-batch:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: chillflow-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: chillflow-secrets
+              key: redis-url
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: chillflow-secrets
+              key: kafka-bootstrap-servers
+        - name: HASH_SALT
+          valueFrom:
+            secretKeyRef:
+              name: chillflow-secrets
+              key: hash-salt
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: SERVICE_NAME
+          value: "chillflow-batch"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -m
+            - chillflow_batch
+            - aggregate
+            - status
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -m
+            - chillflow_batch
+            - aggregate
+            - status
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      restartPolicy: Always

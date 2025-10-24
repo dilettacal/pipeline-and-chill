@@ -1,6 +1,6 @@
 """ChillFlow Core Utilities - Shared utilities and settings."""
 
-from chillflow.clients import (
+from core.clients import (
     get_database_client,
     get_db_session,
     get_kafka_client,
@@ -8,8 +8,8 @@ from chillflow.clients import (
 )
 
 # Import data components
-from chillflow.models import Base, CompleteTrip, Zone
-from chillflow.schemas import (
+from core.models import Base, CompleteTrip, Zone
+from core.schemas import (
     BaseEvent,
     CompleteTripSchema,
     DropEvent,
@@ -23,9 +23,9 @@ from chillflow.schemas import (
     ZoneSchema,
     deserialize_event,
 )
-from chillflow.settings import settings
-from chillflow.utils.hashing import generate_trip_key, generate_vehicle_id_h, sha256_hex
-from chillflow.utils.logging import (
+from core.settings import settings
+from core.utils.hashing import generate_trip_key, generate_vehicle_id_h, sha256_hex
+from core.utils.logging import (
     get_logger,
     setup_console_logging,
     setup_development_logging,

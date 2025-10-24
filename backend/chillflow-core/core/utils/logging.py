@@ -27,7 +27,7 @@ def setup_console_logging(
         service_name: Service name for context (e.g., "trip-assembler")
 
     Example:
-        from chillflow.utils.logging import setup_console_logging
+        from core.utils.logging import setup_console_logging
 
         # Basic setup
         setup_console_logging()
@@ -81,7 +81,7 @@ def setup_json_file_logging(
         log_level: Minimum log level for file (default: DEBUG to capture everything)
 
     Example:
-        from chillflow.utils.logging import setup_json_file_logging
+        from core.utils.logging import setup_json_file_logging
 
         setup_json_file_logging("trip-assembler")
 
@@ -128,7 +128,7 @@ def get_logger(service_name: Optional[str] = None) -> structlog.BoundLogger:
         Configured structlog logger
 
     Example:
-        from chillflow.utils.logging import get_logger
+        from core.utils.logging import get_logger
 
         logger = get_logger("trip-assembler")
         logger.info("Processing trip", trip_id="abc123", status="started")
@@ -149,7 +149,7 @@ def setup_development_logging(service_name: str = "chillflow") -> None:
         service_name: Service name for context
 
     Example:
-        from chillflow.utils.logging import setup_development_logging
+        from core.utils.logging import setup_development_logging
 
         setup_development_logging("trip-assembler")
     """

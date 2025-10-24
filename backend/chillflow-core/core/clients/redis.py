@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 import redis
 from redis.connection import ConnectionPool
 
-from chillflow.settings import settings
-from chillflow.utils.logging import get_logger
+from core.settings import settings
+from core.utils.logging import get_logger
 
 logger = get_logger("redis-client")
 

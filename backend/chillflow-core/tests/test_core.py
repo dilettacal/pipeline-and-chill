@@ -1,7 +1,7 @@
 """Test ChillFlow Core package functionality."""
 
 import pytest
-from chillflow import generate_trip_key, generate_vehicle_id_h, settings, sha256_hex
+from core import generate_trip_key, generate_vehicle_id_h, settings, sha256_hex
 
 
 def test_settings_loading():
@@ -44,13 +44,9 @@ def test_hashing_functions():
 
 def test_package_imports():
     """Test that all core package components can be imported."""
-    from chillflow import settings
-    from chillflow.utils.hashing import (
-        generate_trip_key,
-        generate_vehicle_id_h,
-        sha256_hex,
-    )
-    from chillflow.utils.logging import (
+    from core import settings
+    from core.utils.hashing import generate_trip_key, generate_vehicle_id_h, sha256_hex
+    from core.utils.logging import (
         get_logger,
         setup_console_logging,
         setup_development_logging,

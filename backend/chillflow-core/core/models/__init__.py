@@ -1,6 +1,6 @@
 """SQLAlchemy models for ChillFlow database."""
 
-from chillflow.models.trip import Base, CompleteTrip, Zone
+from core.models.trip import Base, CompleteTrip, Zone
 
 __all__ = [
     "Base",

@@ -1,6 +1,6 @@
 """Pydantic schemas for ChillFlow data validation and serialization."""
 
-from chillflow.schemas.events import (
+from core.schemas.events import (
                                       BaseEvent,
                                       DropEvent,
                                       EventType,
@@ -11,7 +11,7 @@ from chillflow.schemas.events import (
                                       TripEventUnion,
                                       deserialize_event,
 )
-from chillflow.schemas.trip import (
+from core.schemas.trip import (
                                       CompleteTripSchema,
                                       TripCreateSchema,
                                       TripUpdateSchema,

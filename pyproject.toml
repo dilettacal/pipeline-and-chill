@@ -3,6 +3,7 @@ name = "pipeline-and-chill"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "chillflow-batch",
     "chillflow-core",
     "pandas>=2.3.3",
     "pyarrow>=22.0.0",
@@ -14,7 +15,9 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "backend/chillflow-core",
+    "backend/chillflow-batch",
 ]
 
 [tool.uv.sources]
 chillflow-core = { workspace = true }
+chillflow-batch = { workspace = true }

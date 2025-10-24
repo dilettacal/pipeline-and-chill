@@ -13,9 +13,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
-from chillflow.models import Base
-from chillflow.settings import settings
-from chillflow.utils.logging import get_logger
+from core.models import Base
+from core.settings import settings
+from core.utils.logging import get_logger
 
 logger = get_logger("database-client")
 
@@ -190,7 +190,7 @@ def get_db_session() -> Generator[Session, None, None]:
         SQLAlchemy session
 
     Example:
-        from chillflow.clients.database import get_db_session
+        from core.clients.database import get_db_session
 
         with get_db_session() as session:
             trip = session.query(CompleteTrip).first()
