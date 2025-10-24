@@ -2,7 +2,7 @@
 Command-line interface for ChillFlow Batch Processing Service.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import click
@@ -33,23 +33,26 @@ def aggregate():
 
 
 @aggregate.command()
-@click.option("--full-refresh", is_flag=True, help="Perform full refresh of all KPIs")
-def run(full_refresh: bool):
+@click.option(
+    "--incremental", is_flag=True, help="Perform incremental aggregation for yesterday"
+)
+def run(incremental: bool):
     """Run aggregation job."""
     aggregator = BatchAggregator()
 
     try:
-        if full_refresh:
-            logger.info("Starting full refresh aggregation")
-            stats = aggregator.aggregate_full_refresh()
-        else:
-            # Default to incremental for yesterday
+        if incremental:
+            # Incremental for yesterday
             yesterday = datetime.now() - timedelta(days=1)
             logger.info(
                 "Starting incremental aggregation",
                 target_date=yesterday.date().isoformat(),
             )
             stats = aggregator.aggregate_incremental(yesterday)
+        else:
+            # Default to full refresh
+            logger.info("Starting full refresh aggregation")
+            stats = aggregator.aggregate_full_refresh()
 
         click.echo(f"✅ Aggregation complete: {stats}")
 

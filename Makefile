@@ -1,6 +1,6 @@
 # ChillFlow Platform - Development Makefile
 
-.PHONY: help up down clean clean-db logs status setup-env test curate-all download-data
+.PHONY: help up down clean logs status setup-env test pipeline-ingestion pipeline-batch pipeline-stream pipeline-analytics pipeline-full
 
 help: ## Show this help message
 	@echo "ChillFlow Platform Development Commands:"
@@ -32,16 +32,22 @@ down: ## Stop all infrastructure
 	cd platform/compose && docker-compose down
 	@echo "✅ Infrastructure stopped"
 
-clean: ## Remove all containers and volumes
-	@echo "🧹 Cleaning up ChillFlow infrastructure..."
-	cd platform/compose && docker-compose down -v --remove-orphans
-	docker system prune -f
-	@echo "✅ Cleanup complete"
-
-clean-db: ## Clear database tables (keeps infrastructure running)
-	echo "🗑️  Clearing database tables..."
-	uv run python scripts/data-management/clean_database.py --confirm
-	@echo "✅ Database cleanup complete!"
+clean: ## Clean infrastructure and data (usage: make clean TYPE=all|db|containers)
+	@if [ "$(TYPE)" = "db" ]; then \
+		echo "🗑️  Clearing database tables..."; \
+		uv run python scripts/data-management/clean_database.py --confirm; \
+		echo "✅ Database cleanup complete!"; \
+	elif [ "$(TYPE)" = "containers" ]; then \
+		echo "🧹 Cleaning up containers and volumes..."; \
+		cd platform/compose && docker-compose down -v --remove-orphans; \
+		docker system prune -f; \
+		echo "✅ Container cleanup complete!"; \
+	else \
+		echo "🧹 Cleaning up everything..."; \
+		cd platform/compose && docker-compose down -v --remove-orphans; \
+		docker system prune -f; \
+		echo "✅ Full cleanup complete!"; \
+	fi
 
 logs: ## Show infrastructure logs
 	cd platform/compose && docker-compose logs -f
@@ -77,6 +83,68 @@ test: ## Run tests (usage: make test TYPE=unit|infra|all)
 		uv run pytest tests/unit/ -v; \
 	fi
 
+
+pipeline-ingestion: ## Run data ingestion pipeline
+	@echo "📥 Running data ingestion pipeline..."
+	@echo "  1. Running database migrations..."
+	@cd backend/chillflow-core/core/migrations && uv run alembic upgrade head
+	@echo "  2. Downloading NYC taxi data and reference files..."
+	@if [ -f scripts/data-management/download_nyc_data.sh ]; then \
+		chmod +x scripts/data-management/download_nyc_data.sh; \
+		./scripts/data-management/download_nyc_data.sh; \
+	else \
+		echo "❌ Download script not found"; \
+		exit 1; \
+	fi
+	@echo "  3. Seeding taxi zones into database..."
+	@uv run python backend/chillflow-core/core/migrations/seed_zones.py
+	@echo "  4. Curating raw data..."
+	@uv run python scripts/data-management/curate_all_data.py --data-root data
+	@echo "✅ Ingestion complete!"
+
+pipeline-batch: ## Run batch processing pipeline
+	@echo "🔄 Running batch processing pipeline..."
+	@echo "  1. Processing curated trip data..."
+	@uv run python -m batch process trips data/curated/yellow/2025/01/yellow_tripdata_2025-01.parquet
+	@echo "  2. Computing KPIs..."
+	@uv run python -m batch aggregate run
+	@echo "✅ Batch processing complete!"
+
+pipeline-stream: ## Run streaming pipeline
+	@echo "🌊 Running streaming pipeline..."
+	@echo "  1. Starting replay producer..."
+	@uv run python -m stream replay start
+	@echo "  2. Starting trip assembler..."
+	@uv run python -m stream assembler start
+	@echo "✅ Streaming pipeline active!"
+
+pipeline-analytics: ## Run analytics pipeline
+	@echo "📊 Running analytics pipeline..."
+	@echo "  1. Computing zone hourly KPIs..."
+	@uv run python -m batch aggregate run
+	@echo "  2. Generating reports..."
+	@uv run python scripts/analytics/generate_reports.py
+	@echo "✅ Analytics complete!"
+
+pipeline-full: ## Run complete end-to-end pipeline
+	@echo "🚀 Running complete data pipeline..."
+	@echo "  📥 Ingestion: Download, seed zones, curate data"
+	@if [ -f scripts/data-management/download_nyc_data.sh ]; then \
+		chmod +x scripts/data-management/download_nyc_data.sh; \
+		./scripts/data-management/download_nyc_data.sh; \
+	fi
+	@uv run python backend/chillflow-core/core/migrations/seed_zones.py
+	@uv run python scripts/data-management/curate_all_data.py --data-root data
+	@echo "  🔄 Batch: Process trips, compute KPIs"
+	@uv run python -m batch process trips $(YEAR) $(MONTH)
+	@uv run python -m batch aggregate run
+	@echo "  🌊 Stream: Start replay producer and trip assembler"
+	@uv run python -m stream replay start &
+	@uv run python -m stream assembler start &
+	@echo "  📊 Analytics: Generate reports"
+	@uv run python scripts/analytics/generate_reports.py
+	@echo "✅ Complete pipeline finished!"
+
 setup-env: ## Create .env file from template
 	@echo "📝 Setting up environment file..."
 	@if [ ! -f platform/compose/.env ]; then \
@@ -88,30 +156,3 @@ setup-env: ## Create .env file from template
 		echo "📝 Edit it manually if you need to change settings"; \
 	fi
 
-# ========================================================================
-# Data Management Commands
-# ========================================================================
-
-download-data: ## Download NYC taxi data, reference files, and seed zones
-	@echo "📥 Downloading NYC taxi data and reference files..."
-	@if [ -f scripts/data-management/download_nyc_data.sh ]; then \
-		chmod +x scripts/data-management/download_nyc_data.sh; \
-		./scripts/data-management/download_nyc_data.sh; \
-	else \
-		echo "❌ Download script not found. Please ensure scripts/data-management/download_nyc_data.sh exists"; \
-		exit 1; \
-	fi
-	@echo "🌍 Seeding taxi zones into database..."
-	@echo "⚠️  Make sure infrastructure is running: make up"
-	uv run python backend/chillflow-core/core/migrations/seed_zones.py
-	@echo "✅ Data download and zone seeding complete!"
-
-curate-all: ## Curate all available raw data (dynamically discovered)
-	@echo "🔄 Curating all available raw data..."
-	@if [ ! -d "data/raw/yellow" ]; then \
-		echo "❌ No raw data found. Download data first: make download-data"; \
-		exit 1; \
-	fi
-	uv run python scripts/data-management/curate_all_data.py --data-root data
-	@echo "🎉 All data curation complete!"
-	@echo "📊 Curated data available in: data/curated/yellow/"
