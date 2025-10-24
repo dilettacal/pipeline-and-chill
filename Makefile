@@ -1,37 +1,31 @@
 # ChillFlow Platform - Development Makefile
 
-.PHONY: help up down up-observability clean logs status setup-env test test-unit test-infra test-all curate-all download-data
+.PHONY: help up down clean clean-db logs status setup-env test curate-all download-data
 
 help: ## Show this help message
 	@echo "ChillFlow Platform Development Commands:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-up: ## Start infrastructure stack (Postgres, Redis, Kafka)
-	@echo "🚀 Starting ChillFlow infrastructure..."
-	@if [ ! -f platform/compose/.env ]; then \
+up: ## Start infrastructure (usage: make up PROFILE=basic|observability)
+	@if [ "$(PROFILE)" = "observability" ]; then \
+		echo "🚀 Starting ChillFlow infrastructure with monitoring..."; \
+		echo "📈 Grafana: http://localhost:3000 (admin/admin)"; \
+		echo "📊 Prometheus: http://localhost:9090"; \
+		PROFILE_FLAG="--profile observability"; \
+	else \
+		echo "🚀 Starting ChillFlow infrastructure..."; \
+		PROFILE_FLAG=""; \
+	fi; \
+	if [ ! -f platform/compose/.env ]; then \
 		echo "📝 Creating .env file from template..."; \
 		cp platform/compose/env.example platform/compose/.env; \
-	fi
-	cd platform/compose && docker-compose up -d postgres redis zookeeper kafka
-	@echo "✅ Infrastructure ready!"
-	@echo "   📊 Database: postgresql://dev:dev@localhost:5432/chillflow"
-	@echo "   🔴 Redis: redis://localhost:6379/0"
-	@echo "   📨 Kafka: localhost:9092"
-
-up-observability: ## Start infrastructure with monitoring (Grafana, Prometheus)
-	@echo "🚀 Starting ChillFlow infrastructure with monitoring..."
-	@if [ ! -f platform/compose/.env ]; then \
-		echo "📝 Creating .env file from template..."; \
-		cp platform/compose/env.example platform/compose/.env; \
-	fi
-	cd platform/compose && docker-compose --profile observability up -d
-	@echo "✅ Infrastructure with monitoring ready!"
-	@echo "   📊 Database: postgresql://dev:dev@localhost:5432/chillflow"
-	@echo "   🔴 Redis: redis://localhost:6379/0"
-	@echo "   📨 Kafka: localhost:9092"
-	@echo "   📈 Grafana: http://localhost:3000 (admin/admin)"
-	@echo "   📊 Prometheus: http://localhost:9090"
+	fi; \
+	cd platform/compose && docker-compose $$PROFILE_FLAG up -d postgres redis zookeeper kafka; \
+	echo "✅ Infrastructure ready!"; \
+	echo "   📊 Database: postgresql://dev:dev@localhost:5432/chillflow"; \
+	echo "   🔴 Redis: redis://localhost:6379/0"; \
+	echo "   📨 Kafka: localhost:9092"
 
 down: ## Stop all infrastructure
 	@echo "🛑 Stopping ChillFlow infrastructure..."
@@ -43,6 +37,11 @@ clean: ## Remove all containers and volumes
 	cd platform/compose && docker-compose down -v --remove-orphans
 	docker system prune -f
 	@echo "✅ Cleanup complete"
+
+clean-db: ## Clear database tables (keeps infrastructure running)
+	echo "🗑️  Clearing database tables..."
+	uv run python scripts/data-management/clean_database.py --confirm
+	@echo "✅ Database cleanup complete!"
 
 logs: ## Show infrastructure logs
 	cd platform/compose && docker-compose logs -f
@@ -65,22 +64,18 @@ status: ## Show infrastructure status
 	@echo "📊 Prometheus:"
 	@curl -s http://localhost:9090/-/healthy >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"
 
-test: ## Run unit tests (default)
-	@echo "🧪 Running unit tests..."
-	uv run pytest tests/unit/ -v
-
-test-unit: ## Run unit tests only
-	@echo "🧪 Running unit tests..."
-	uv run pytest tests/ -m unit -v
-
-test-infra: ## Run infrastructure tests (requires Docker)
-	@echo "🧪 Running infrastructure tests..."
-	@echo "⚠️  Make sure infrastructure is running: make up"
-	uv run pytest tests/infrastructure/ -m infrastructure -v
-
-test-all: ## Run all tests (unit + infrastructure)
-	@echo "🧪 Running all tests..."
-	uv run pytest tests/ -v
+test: ## Run tests (usage: make test TYPE=unit|infra|all)
+	@if [ "$(TYPE)" = "infra" ]; then \
+		echo "🧪 Running infrastructure tests..."; \
+		echo "⚠️  Make sure infrastructure is running: make up"; \
+		uv run pytest tests/infrastructure/ -m infrastructure -v; \
+	elif [ "$(TYPE)" = "all" ]; then \
+		echo "🧪 Running all tests..."; \
+		uv run pytest tests/ -v; \
+	else \
+		echo "🧪 Running unit tests..."; \
+		uv run pytest tests/unit/ -v; \
+	fi
 
 setup-env: ## Create .env file from template
 	@echo "📝 Setting up environment file..."

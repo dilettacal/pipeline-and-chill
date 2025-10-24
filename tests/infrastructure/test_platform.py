@@ -8,7 +8,7 @@ Run with: pytest tests/infrastructure/ -m infrastructure
 from datetime import datetime
 
 import pytest
-from chillflow import (
+from core import (
     CompleteTrip,
     CompleteTripSchema,
     Zone,
@@ -18,7 +18,7 @@ from chillflow import (
     get_redis_client,
     setup_development_logging,
 )
-from chillflow.clients.database import get_db_session
+from core.clients.database import get_db_session
 from sqlalchemy import text
 
 

@@ -7,7 +7,7 @@ These tests don't require external dependencies like databases or Docker.
 from datetime import datetime
 
 import pytest
-from chillflow import (
+from core import (
     CompleteTripSchema,
     EventType,
     ZoneSchema,
