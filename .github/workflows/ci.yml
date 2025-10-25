@@ -45,12 +45,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
-        command: >-
-          redpanda start
-          --overprovisioned --smp 1 --memory 512M --reserve-memory 0M
-          --node-id 0 --check=false
-          --kafka-addr PLAINTEXT://0.0.0.0:9092
-          --advertise-kafka-addr PLAINTEXT://127.0.0.1:9092
+        env:
+          REDPANDA_OVERPROVISIONED: "true"
+          REDPANDA_SMP: "1"
+          REDPANDA_MEMORY: "512M"
+          REDPANDA_RESERVE_MEMORY: "0M"
+          REDPANDA_NODE_ID: "0"
+          REDPANDA_CHECK: "false"
+          REDPANDA_KAFKA_ADDR: "PLAINTEXT://0.0.0.0:9092"
+          REDPANDA_ADVERTISE_KAFKA_ADDR: "PLAINTEXT://127.0.0.1:9092"
 
     steps:
     - name: Checkout code
