@@ -70,14 +70,23 @@ status: ## Show infrastructure status
 	@echo "📊 Prometheus:"
 	@curl -s http://localhost:9090/-/healthy >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"
 
-test: ## Run tests (usage: make test TYPE=unit|infra|all)
+test: ## Run tests (usage: make test TYPE=unit|infra|stream|stream-integration|all)
 	@if [ "$(TYPE)" = "infra" ]; then \
 		echo "🧪 Running infrastructure tests..."; \
 		echo "⚠️  Make sure infrastructure is running: make up"; \
 		uv run pytest tests/infrastructure/ -m infrastructure -v; \
+	elif [ "$(TYPE)" = "stream" ]; then \
+		echo "🧪 Running stream service unit tests..."; \
+		cd backend/chillflow-stream && uv run pytest tests/ -m "not integration" -v; \
+	elif [ "$(TYPE)" = "stream-integration" ]; then \
+		echo "🧪 Running stream service integration tests..."; \
+		echo "⚠️  This requires Docker and testcontainers"; \
+		cd backend/chillflow-stream && uv run pytest tests/ -m integration -v; \
 	elif [ "$(TYPE)" = "all" ]; then \
 		echo "🧪 Running all tests..."; \
 		uv run pytest tests/ -v; \
+		echo "🧪 Running stream service tests..."; \
+		cd backend/chillflow-stream && uv run pytest tests/ -v; \
 	else \
 		echo "🧪 Running unit tests..."; \
 		uv run pytest tests/unit/ -v; \

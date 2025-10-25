@@ -47,7 +47,7 @@ class TripStartedEvent(TripEvent):
     """Event when a trip begins."""
 
     event_type: EventType = Field(default=EventType.TRIP_STARTED, description="Event type")
-    pickup_zone_id: int = Field(..., description="Pickup zone ID")
+    pickup_zone_id: Optional[int] = Field(None, description="Pickup zone ID")
     passenger_count: Optional[int] = Field(None, description="Number of passengers")
 
 
@@ -55,7 +55,7 @@ class TripEndedEvent(TripEvent):
     """Event when a trip ends."""
 
     event_type: EventType = Field(default=EventType.TRIP_ENDED, description="Event type")
-    dropoff_zone_id: int = Field(..., description="Dropoff zone ID")
+    dropoff_zone_id: Optional[int] = Field(None, description="Dropoff zone ID")
     trip_distance: Optional[float] = Field(None, description="Trip distance in km")
     trip_duration_minutes: Optional[float] = Field(None, description="Trip duration in minutes")
 
@@ -73,7 +73,7 @@ class PaymentProcessedEvent(TripEvent):
 class ZoneEvent(TripEvent):
     """Event when entering or exiting a zone."""
 
-    zone_id: int = Field(..., description="Zone ID")
+    zone_id: Optional[int] = Field(None, description="Zone ID")
     zone_name: Optional[str] = Field(None, description="Zone name")
     borough: Optional[str] = Field(None, description="Borough name")
 
