@@ -184,5 +184,6 @@ def get_db_session() -> Generator[Session, None, None]:
         with get_db_session() as session:
             trip = session.query(CompleteTrip).first()
     """
-    with db_client.get_session() as session:
+    client = get_database_client()
+    with client.get_session() as session:
         yield session

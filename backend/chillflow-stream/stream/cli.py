@@ -17,6 +17,7 @@ from core.models.trip import CompleteTrip
 from sqlalchemy import text
 from structlog import get_logger
 
+from .trip_assembler import TripAssembler
 from .trip_event_producer import TripEventProducer
 
 logger = get_core_logger("chillflow-stream.cli")
@@ -185,6 +186,49 @@ def consume_events(topic: str, timeout: int):
 
     except Exception as e:
         logger.error("Event consumption failed", error=str(e))
+        click.echo(f"❌ Error: {e}")
+        sys.exit(1)
+
+
+@main.command()
+@click.option("--topic", default="trip-events", help="Kafka topic name")
+@click.option("--timeout", type=int, default=30, help="Consumer timeout in seconds")
+@click.option("--max-events", type=int, help="Maximum number of events to process")
+@click.option("--save-db/--no-save-db", default=True, help="Save completed trips to database")
+def assemble_trips(topic: str, timeout: int, max_events: Optional[int], save_db: bool):
+    """Assemble events into complete trips."""
+    logger.info("Starting trip assembly", topic=topic, timeout=timeout, save_db=save_db)
+
+    try:
+        # Initialize assembler
+        assembler = TripAssembler(topic=topic)
+
+        try:
+            # Run assembly loop
+            stats = assembler.run_assembly_loop(
+                timeout_ms=timeout * 1000,
+                max_events=max_events,
+                save_to_db=save_db,
+            )
+
+            logger.info(
+                "Trip assembly complete",
+                trips_assembled=stats["trips_assembled"],
+                trips_saved=stats["trips_saved"],
+                trips_failed=stats["trips_failed"],
+            )
+
+            click.echo(f"✅ Assembled {stats['trips_assembled']} trips")
+            if save_db:
+                click.echo(f"💾 Saved {stats['trips_saved']} trips to database")
+                if stats["trips_failed"] > 0:
+                    click.echo(f"❌ Failed to save {stats['trips_failed']} trips")
+
+        finally:
+            assembler.close()
+
+    except Exception as e:
+        logger.error("Trip assembly failed", error=str(e))
         click.echo(f"❌ Error: {e}")
         sys.exit(1)
 

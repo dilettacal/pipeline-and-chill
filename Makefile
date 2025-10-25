@@ -138,9 +138,9 @@ pipeline-full: ## Run complete end-to-end pipeline
 	@echo "  🔄 Batch: Process trips, compute KPIs"
 	@uv run python -m batch process trips $(YEAR) $(MONTH)
 	@uv run python -m batch aggregate run
-	@echo "  🌊 Stream: Start replay producer and trip assembler"
-	@uv run python -m stream replay start &
-	@uv run python -m stream assembler start &
+	@echo "  🌊 Stream: Start trip event producer and assembler"
+	@uv run python -m stream.cli produce-events --limit 100 &
+	@uv run python -m stream.cli assemble-trips --timeout 30 &
 	@echo "  📊 Analytics: Generate reports"
 	@uv run python scripts/analytics/generate_reports.py
 	@echo "✅ Complete pipeline finished!"
@@ -168,3 +168,30 @@ lint-fix: ## Run pre-commit hooks and auto-fix issues
 lint-update: ## Update pre-commit hooks to latest versions
 	@echo "🔄 Updating pre-commit hooks..."
 	uv run pre-commit autoupdate
+
+# Stream processing pipeline
+pipeline-stream: ## Run streaming pipeline (produce events + assemble trips)
+	@echo "🌊 Running streaming pipeline..."
+	@echo "  1. Creating Kafka topic..."
+	@uv run python -m stream.cli create-topic --topic trip-events
+	@echo "  2. Producing events from database..."
+	@uv run python -m stream.cli produce-events --limit 50 --topic trip-events
+	@echo "  3. Assembling events into trips..."
+	@uv run python -m stream.cli assemble-trips --topic trip-events --timeout 10
+	@echo "✅ Streaming pipeline complete!"
+
+stream-produce: ## Produce trip events from database
+	@echo "📡 Producing trip events..."
+	@uv run python -m stream.cli produce-events --limit 100
+
+stream-assemble: ## Assemble events into complete trips
+	@echo "🔧 Assembling events into trips..."
+	@uv run python -m stream.cli assemble-trips --timeout 30
+
+stream-consume: ## Consume and display events from Kafka
+	@echo "👀 Consuming events from Kafka..."
+	@uv run python -m stream.cli consume-events --topic trip-events --timeout 10
+
+stream-create-topic: ## Create Kafka topic for trip events
+	@echo "📋 Creating Kafka topic..."
+	@uv run python -m stream.cli create-topic --topic trip-events

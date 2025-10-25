@@ -14,6 +14,7 @@ from .events import (
     ZoneEnteredEvent,
     ZoneExitedEvent,
 )
+from .trip_assembler import TripAssembler
 from .trip_event_producer import TripEventProducer
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "ZoneEnteredEvent",
     "ZoneExitedEvent",
     "TripEventProducer",
+    "TripAssembler",
 ]
