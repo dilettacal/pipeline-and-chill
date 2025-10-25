@@ -85,11 +85,15 @@ jobs:
         uv run make test TYPE=batch-integration || echo "Batch integration tests skipped (Docker not available)"
       continue-on-error: true
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          .pytest_cache/
-        retention-days: 7
+    # Test artifacts are not needed for this project
+    # - name: Upload test results
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: test-results
+    #     path: |
+    #       .pytest_cache/
+    #       htmlcov/
+    #       coverage.xml
+    #     retention-days: 7
+    #   continue-on-error: true
