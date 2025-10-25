@@ -58,9 +58,13 @@ def kafka_bootstrap() -> str:
     Otherwise, spin up Testcontainers Kafka for local/dev runs.
     """
     bs = _normalize_bootstrap(os.getenv("KAFKA_BOOTSTRAP_SERVERS"))
+    use_testcontainers = os.getenv("USE_TESTCONTAINERS", "false").lower() in ("1", "true")
+
+    print(f"\n[pytest] Using KAFKA_BOOTSTRAP_SERVERS={bs}")
+    print(f"[pytest] USE_TESTCONTAINERS={use_testcontainers}\n", flush=True)
 
     # If we have a specific bootstrap server (CI), use it
-    if bs != "localhost:9092" or os.getenv("USE_TESTCONTAINERS", "false").lower() in ("1", "true"):
+    if bs != "localhost:9092" or not use_testcontainers:
         # Use the provided broker (CI path)
         _wait_for_kafka(bs, timeout=60)
         return bs
@@ -344,22 +348,14 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """
     Automatically skip integration tests if testcontainers not available.
-    But allow them to run in CI with Redpanda service.
     """
     skip_integration = pytest.mark.skip(
         reason="testcontainers not available or integration test requires Docker"
     )
 
-    # Check if we're in CI with Redpanda service
-    kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
-    is_ci_with_redpanda = kafka_bootstrap and kafka_bootstrap != "localhost:9092"
-
     for item in items:
-        # Skip integration tests if testcontainers not available AND not in CI
+        # Skip integration tests if testcontainers not available
         if "integration" in item.keywords:
-            if is_ci_with_redpanda:
-                # In CI with Redpanda service, allow tests to run
-                continue
             try:
                 import testcontainers
             except ImportError:

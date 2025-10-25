@@ -83,6 +83,7 @@ jobs:
         echo "DATABASE_URL=postgresql+psycopg://test:test@localhost:5432/test_chillflow" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
         echo "KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:9092" >> $GITHUB_ENV
+        echo "USE_TESTCONTAINERS=false" >> $GITHUB_ENV
         echo "TESTCONTAINERS_RYUK_DISABLED=false" >> $GITHUB_ENV
         echo "HASH_SALT=github-actions-test-salt" >> $GITHUB_ENV
 
@@ -95,6 +96,28 @@ jobs:
       run: |
         echo "🧪 Running comprehensive test suite..."
         uv run make test TYPE=all
+
+    - name: Verify Kafka Connectivity
+      run: |
+        echo "🔍 Checking Kafka connectivity before tests..."
+        echo "KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}"
+        getent hosts redpanda || echo "redpanda not resolvable (expected for host job)"
+        python - <<'PY'
+        import os, sys, time
+        from kafka import KafkaAdminClient
+        bs = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+        print(f"CONNECTING TO {bs}", flush=True)
+        t0=time.time(); last=None
+        while time.time()-t0 < 30:
+            try:
+                KafkaAdminClient(bootstrap_servers=bs).list_topics()
+                print("✅ KAFKA OK")
+                sys.exit(0)
+            except Exception as e:
+                last=e; time.sleep(1)
+        print(f"❌ KAFKA NOT READY: {last}")
+        sys.exit(1)
+        PY
 
     - name: Run Integration Tests
       run: |
