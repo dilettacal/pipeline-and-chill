@@ -48,7 +48,7 @@ jobs:
     needs: quality  # Wait for quality checks to pass
     strategy:
       matrix:
-        test-suite: [unit, stream, batch, contract, smoke]
+        test-suite: [unit, stream, stream-integration, batch, batch-integration, contract, smoke]
       fail-fast: false  # Don't stop other jobs if one fails
     env:
       # Enable Testcontainers in all environments
@@ -105,11 +105,19 @@ jobs:
             ;;
           "stream")
             cd backend/chillflow-stream
-            uv run pytest tests/ -v --tb=short
+            uv run pytest tests/ -m "not integration" -v --tb=short
+            ;;
+          "stream-integration")
+            cd backend/chillflow-stream
+            uv run pytest tests/ -m integration -v --tb=short
             ;;
           "batch")
             cd backend/chillflow-batch
-            uv run pytest tests/ -v --tb=short
+            uv run pytest tests/ -m "not integration" -v --tb=short
+            ;;
+          "batch-integration")
+            cd backend/chillflow-batch
+            uv run pytest tests/ -m integration -v --tb=short
             ;;
           "contract")
             uv run pytest tests/contracts/ -v --tb=short
