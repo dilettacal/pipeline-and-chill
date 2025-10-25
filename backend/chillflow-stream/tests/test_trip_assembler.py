@@ -10,13 +10,14 @@ from stream.trip_assembler import TripAssembler
 class TestTripAssembler:
     """Test cases for TripAssembler."""
 
-    def test_initialization(self):
+    def test_initialization(self, kafka_bootstrap):
         """Test assembler initialization."""
-        assembler = TripAssembler()
+        assembler = TripAssembler(kafka_bootstrap_servers=kafka_bootstrap)
         assert assembler.topic == "trip-events"
         assert assembler.group_id == "trip-assembler"
         assert len(assembler.partial_trips) == 0
         assert len(assembler.completed_trips) == 0
+        assembler.close()
 
     @patch("stream.trip_assembler.KafkaConsumer")
     def test_initialization_with_custom_params(self, mock_kafka_consumer):

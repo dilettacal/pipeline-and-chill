@@ -10,11 +10,12 @@ from stream.trip_event_producer import TripEventProducer
 class TestTripEventProducer:
     """Test cases for TripEventProducer."""
 
-    def test_initialization(self):
+    def test_initialization(self, kafka_bootstrap):
         """Test producer initialization."""
-        producer = TripEventProducer()
+        producer = TripEventProducer(kafka_bootstrap_servers=kafka_bootstrap)
         # Check that producer was initialized (Kafka producer is lazy-loaded)
         assert hasattr(producer, "kafka_producer")
+        producer.close()
 
     @patch("stream.trip_event_producer.KafkaProducer")
     def test_initialization_with_custom_params(self, mock_kafka_producer):
@@ -23,9 +24,9 @@ class TestTripEventProducer:
         # Check that producer was initialized with custom parameters
         assert hasattr(producer, "kafka_producer")
 
-    def test_process_trip(self):
+    def test_process_trip(self, kafka_bootstrap):
         """Test processing a single trip into events."""
-        producer = TripEventProducer()
+        producer = TripEventProducer(kafka_bootstrap_servers=kafka_bootstrap)
 
         # Create CompleteTrip object
         from core import CompleteTrip
@@ -83,9 +84,11 @@ class TestTripEventProducer:
         assert payment.total_amount == 18.50
         assert payment.payment_type == 1
 
-    def test_process_trip_with_none_values(self):
+        producer.close()
+
+    def test_process_trip_with_none_values(self, kafka_bootstrap):
         """Test processing trip with None values."""
-        producer = TripEventProducer()
+        producer = TripEventProducer(kafka_bootstrap_servers=kafka_bootstrap)
 
         from core import CompleteTrip
 
@@ -115,6 +118,8 @@ class TestTripEventProducer:
         assert trip_started.pickup_zone_id is None
         assert trip_started.passenger_count is None
 
+        producer.close()
+
     @patch("stream.trip_event_producer.KafkaProducer")
     def test_send_events_to_kafka(self, mock_kafka_producer):
         """Test sending events to Kafka."""
@@ -140,11 +145,11 @@ class TestTripEventProducer:
         # Just verify the producer was created
         assert hasattr(producer, "kafka_producer")
 
-    def test_process_trips_from_dataframe(self):
+    def test_process_trips_from_dataframe(self, kafka_bootstrap):
         """Test processing trips from DataFrame."""
         import pandas as pd
 
-        producer = TripEventProducer()
+        producer = TripEventProducer(kafka_bootstrap_servers=kafka_bootstrap)
 
         # Create test DataFrame
         df = pd.DataFrame(
@@ -174,6 +179,8 @@ class TestTripEventProducer:
             assert "total_events" in result
             assert "sent" in result
             assert "failed" in result
+
+        producer.close()
 
     @patch("stream.trip_event_producer.KafkaProducer")
     def test_close(self, mock_kafka_producer):

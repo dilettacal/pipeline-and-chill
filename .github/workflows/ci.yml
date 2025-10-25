@@ -7,8 +7,48 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  # Code quality checks (runs first)
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+
+    - name: Code Quality Checks
+      run: |
+        echo "🔍 Running code quality checks..."
+        uv run pre-commit run --all-files --config .pre-commit-config-ci.yaml
+
+  # Parallel test execution
   tests:
     runs-on: ubuntu-latest
+    needs: quality  # Wait for quality checks to pass
+    strategy:
+      matrix:
+        test-suite: [unit, stream, batch, contract, smoke]
+      fail-fast: false  # Don't stop other jobs if one fails
     env:
       # Enable Testcontainers in all environments
       USE_TESTCONTAINERS: "true"
@@ -55,34 +95,25 @@ jobs:
         docker pull confluentinc/cp-kafka:7.6.1 || true
         docker pull testcontainers/ryuk:0.6.0 || true
 
-    - name: Code Quality Checks
+    - name: Run ${{ matrix.test-suite }} Tests
       run: |
-        echo "🔍 Running code quality checks..."
-        uv run pre-commit run --all-files --config .pre-commit-config-ci.yaml
-
-    - name: Run Unit Tests
-      run: |
-        echo "🧪 Running unit tests..."
-        uv run pytest tests/unit/ -v --tb=short
-
-    - name: Run Stream Service Tests
-      run: |
-        echo "🧪 Running stream service tests..."
-        cd backend/chillflow-stream
-        uv run pytest tests/ -v --tb=short
-
-    - name: Run Batch Service Tests
-      run: |
-        echo "🧪 Running batch service tests..."
-        cd backend/chillflow-batch
-        uv run pytest tests/ -v --tb=short
-
-    - name: Run Contract Tests
-      run: |
-        echo "🧪 Running contract tests..."
-        uv run pytest tests/contracts/ -v --tb=short
-
-    - name: Run Smoke Tests
-      run: |
-        echo "🧪 Running smoke tests..."
-        uv run pytest tests/smoke/ -v --tb=short
+        echo "🧪 Running ${{ matrix.test-suite }} tests..."
+        case "${{ matrix.test-suite }}" in
+          "unit")
+            uv run pytest tests/unit/ -v --tb=short
+            ;;
+          "stream")
+            cd backend/chillflow-stream
+            uv run pytest tests/ -v --tb=short
+            ;;
+          "batch")
+            cd backend/chillflow-batch
+            uv run pytest tests/ -v --tb=short
+            ;;
+          "contract")
+            uv run pytest tests/contracts/ -v --tb=short
+            ;;
+          "smoke")
+            uv run pytest tests/smoke/ -v --tb=short
+            ;;
+        esac
