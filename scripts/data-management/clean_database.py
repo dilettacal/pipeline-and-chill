@@ -6,7 +6,6 @@ This script clears trip data and KPIs but preserves zones and infrastructure.
 """
 
 import sys
-from pathlib import Path
 
 from core import get_database_client, get_db_session
 from sqlalchemy import text

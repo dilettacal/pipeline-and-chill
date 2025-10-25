@@ -133,4 +133,3 @@ class TestMonthlyLoader:
         """Test full month curation pipeline."""
         # This would require actual file I/O, so we'll skip it in unit tests
         # Integration tests would cover this
-        pass

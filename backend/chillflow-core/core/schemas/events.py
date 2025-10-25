@@ -7,7 +7,7 @@ event messages in the ChillFlow streaming system.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 

@@ -8,16 +8,7 @@ Run with: pytest tests/infrastructure/ -m infrastructure
 from datetime import datetime
 
 import pytest
-from core import (
-    CompleteTrip,
-    CompleteTripSchema,
-    Zone,
-    get_database_client,
-    get_kafka_client,
-    get_logger,
-    get_redis_client,
-    setup_development_logging,
-)
+from core import CompleteTripSchema, get_database_client, get_kafka_client, get_redis_client
 from core.clients.database import get_db_session
 from sqlalchemy import text
 

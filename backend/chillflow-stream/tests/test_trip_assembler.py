@@ -3,9 +3,7 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pytest
-
-from stream.events import EventType, PaymentProcessedEvent, TripEndedEvent, TripStartedEvent
+from stream.events import PaymentProcessedEvent, TripEndedEvent, TripStartedEvent
 from stream.trip_assembler import TripAssembler
 
 

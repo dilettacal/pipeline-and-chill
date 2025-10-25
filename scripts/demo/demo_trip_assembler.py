@@ -21,7 +21,6 @@ Usage:
 import json
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
 # Add packages to path
@@ -30,9 +29,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "packages" / "core-utils")
 
 import redis
 from fluxframe.settings import settings
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
-from loguru import logger
 from sqlalchemy import create_engine, text
 
 

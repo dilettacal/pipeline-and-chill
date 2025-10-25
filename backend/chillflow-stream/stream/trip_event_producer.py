@@ -7,14 +7,12 @@ streaming events that can be processed in real-time.
 
 import uuid
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
 from core import CompleteTrip
 from core import get_logger as get_core_logger
 from kafka import KafkaProducer
-from structlog import get_logger
 
 from .events import (
     EventType,

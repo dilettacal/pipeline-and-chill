@@ -4,10 +4,9 @@ Batch scheduler for managing scheduled batch processing jobs.
 
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import schedule
-import structlog
 from core import get_logger
 
 from .aggregator import BatchAggregator

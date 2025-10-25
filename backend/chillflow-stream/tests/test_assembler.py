@@ -1,9 +1,7 @@
 """Test stream processing integration."""
 
 from datetime import datetime
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import patch
 
 from stream.trip_assembler import TripAssembler
 from stream.trip_event_producer import TripEventProducer

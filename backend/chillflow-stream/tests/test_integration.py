@@ -1,17 +1,45 @@
 """Test end-to-end stream flow with CLI integration."""
 
+import os
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-import pytest
-
+from kafka import KafkaConsumer, KafkaProducer
 from stream.cli import main
-from stream.trip_assembler import TripAssembler
-from stream.trip_event_producer import TripEventProducer
+
+from ._kafka_helpers import ensure_topic
 
 
 class TestStreamCLIIntegration:
     """Test CLI integration for stream processing."""
+
+    def test_kafka_roundtrip(self, kafka_bootstrap):
+        """Test basic Kafka roundtrip using Testcontainers (expert's approach)."""
+        topic = "it-stream-roundtrip"
+        partitions = int(os.getenv("KAFKA_IT_TOPIC_PARTITIONS", "1"))
+        rf = int(os.getenv("KAFKA_IT_TOPIC_RF", "1"))
+        ensure_topic(kafka_bootstrap, topic, partitions, rf)
+
+        producer = KafkaProducer(
+            bootstrap_servers=kafka_bootstrap,
+            acks="all",
+            retries=5,
+            linger_ms=5,
+            request_timeout_ms=30000,
+        )
+        producer.send(topic, b"hello")
+        producer.flush()
+
+        consumer = KafkaConsumer(
+            topic,
+            bootstrap_servers=kafka_bootstrap,
+            auto_offset_reset="earliest",
+            consumer_timeout_ms=8000,
+            session_timeout_ms=15000,
+            max_poll_interval_ms=120000,
+        )
+        msgs = [m.value for m in consumer]
+        assert b"hello" in msgs
 
     @patch("stream.cli.TripEventProducer")
     @patch("stream.cli.get_db_session")

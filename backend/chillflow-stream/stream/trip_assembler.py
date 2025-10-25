@@ -6,14 +6,13 @@ and reassembles them into complete trip records for database storage.
 """
 
 import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set
+from datetime import datetime
+from typing import Dict, List, Optional
 
 from core import CompleteTrip
 from core import get_logger as get_core_logger
 from core.clients.database import get_db_session
 from kafka import KafkaConsumer
-from structlog import get_logger
 
 from .events import (
     EventType,

@@ -5,13 +5,10 @@ These tests verify that CLI commands work end-to-end without
 complex infrastructure dependencies.
 """
 
-import os
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pandas as pd
 import pytest
 
 # Add backend paths for imports
@@ -87,7 +84,6 @@ class TestCLISmoke:
 
     def test_data_validation_smoke(self):
         """Test data validation and filtering."""
-        from batch.producer import BatchTripProducer
         from core import CompleteTrip
 
         # Test valid trip

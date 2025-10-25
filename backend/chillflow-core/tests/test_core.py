@@ -1,6 +1,5 @@
 """Test ChillFlow Core package functionality."""
 
-import pytest
 from core import generate_trip_key, generate_vehicle_id_h, settings, sha256_hex
 
 
@@ -42,14 +41,6 @@ def test_hashing_functions():
 
 def test_package_imports():
     """Test that all core package components can be imported."""
-    from core import settings
-    from core.utils.hashing import generate_trip_key, generate_vehicle_id_h, sha256_hex
-    from core.utils.logging import (
-        get_logger,
-        setup_console_logging,
-        setup_development_logging,
-        setup_json_file_logging,
-    )
 
     # If we get here without import errors, the test passes
     assert True

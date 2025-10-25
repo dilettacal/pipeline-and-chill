@@ -108,6 +108,10 @@ test: ## Run tests (usage: make test TYPE=unit|infra|stream|stream-integration|b
 		cd $(PROJECT_ROOT)/backend/chillflow-stream && uv run pytest tests/ -m "not integration" -v; \
 		echo "🧪 Running batch service unit tests..."; \
 		cd $(PROJECT_ROOT)/backend/chillflow-batch && uv run pytest tests/ -m "not integration" -v; \
+		echo "🧪 Running stream integration tests..."; \
+		cd $(PROJECT_ROOT)/backend/chillflow-stream && uv run pytest tests/ -m integration -v; \
+		echo "🧪 Running batch integration tests..."; \
+		cd $(PROJECT_ROOT)/backend/chillflow-batch && uv run pytest tests/ -m integration -v; \
 		echo "🧪 Running contract tests..."; \
 		cd $(PROJECT_ROOT) && uv run pytest tests/contracts/ -m contract -v; \
 		echo "🧪 Running smoke tests..."; \

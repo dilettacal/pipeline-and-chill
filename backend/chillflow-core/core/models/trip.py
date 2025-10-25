@@ -5,7 +5,6 @@ This module contains the database models for the ChillFlow trip processing syste
 including complete trip records and related entities.
 """
 
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import TIMESTAMP, Column, Float, ForeignKey, Integer, String, text

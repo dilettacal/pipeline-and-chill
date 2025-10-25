@@ -1,39 +1,20 @@
 """
-Pytest configuration and shared fixtures for ChillFlow Stream tests.
+Unified Testcontainers configuration for ChillFlow Stream tests.
 
-This file provides testcontainers-based fixtures for proper integration testing
-with real Kafka and PostgreSQL instances.
+This implements the expert's approach with a single, clean Testcontainers strategy.
 """
 
 import os
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Generator
 
 import pytest
 from core import CompleteTrip
-from testcontainers.compose import DockerCompose
-from testcontainers.kafka import RedpandaContainer
 from testcontainers.postgres import PostgresContainer
 
-# =============================================================================
-# Test Environment Configuration
-# =============================================================================
 
-
-def _normalize_bootstrap(value: str | None) -> str:
-    """Normalize bootstrap server string and fix common issues."""
-    v = (value or "").strip()
-    # Guard against "l:9092" typo and other junk
-    if v == "l:9092":
-        return "localhost:9092"
-    if v.startswith("PLAINTEXT://"):
-        v = v.split("://", 1)[1]
-    return v or "localhost:9092"
-
-
-def _wait_for_kafka(bootstrap: str, timeout=30):
+def _wait_for_kafka(bootstrap: str, timeout=60):
     """Wait for Kafka to be ready by checking cluster info."""
     from kafka import KafkaAdminClient
 
@@ -54,62 +35,25 @@ def _wait_for_kafka(bootstrap: str, timeout=30):
 @pytest.fixture(scope="session")
 def kafka_bootstrap() -> str:
     """
-    Prefer an existing broker via env (CI Redpanda).
-    Otherwise, spin up Testcontainers Kafka for local/dev runs.
+    Always start a Kafka broker with Testcontainers for this test session.
+    Returns a usable bootstrap server string (host:port).
     """
-    bs = _normalize_bootstrap(os.getenv("KAFKA_BOOTSTRAP_SERVERS"))
-    use_testcontainers = os.getenv("USE_TESTCONTAINERS", "false").lower() in ("1", "true")
+    from testcontainers.kafka import KafkaContainer
 
-    print(f"\n[pytest] Using KAFKA_BOOTSTRAP_SERVERS={bs}")
-    print(f"[pytest] USE_TESTCONTAINERS={use_testcontainers}\n", flush=True)
+    # Pin to a specific, known-fast image to avoid surprises
+    image = os.getenv("KAFKA_TESTCONTAINERS_IMAGE", "confluentinc/cp-kafka:7.6.1")
 
-    # If we have a specific bootstrap server (CI), use it
-    if bs != "localhost:9092" or not use_testcontainers:
-        # Use the provided broker (CI path)
-        _wait_for_kafka(bs, timeout=60)
-        return bs
-
-    # For local development, use testcontainers
-    try:
-        from testcontainers.core.waiting_utils import wait_for_logs
-        from testcontainers.kafka import KafkaContainer
-
-        # Start ephemeral Kafka with sane defaults
-        with KafkaContainer() as kafka:
-            bs = _normalize_bootstrap(kafka.get_bootstrap_server())
-            _wait_for_kafka(bs, timeout=60)
-            yield bs
-            return
-    except Exception:
-        # If testcontainers missing or fails, try the env/default
-        _wait_for_kafka(bs, timeout=60)
-        return bs
+    # NOTE: session-scoped context manager keeps a single broker for all tests
+    with KafkaContainer(image=image) as kafka:
+        bootstrap = kafka.get_bootstrap_server()
+        _wait_for_kafka(bootstrap, timeout=90)
+        yield bootstrap
+        # container stops automatically
 
 
-@pytest.fixture(scope="session")
-def test_env():
-    """Test environment configuration."""
-    return {
-        "KAFKA_BOOTSTRAP": "localhost:9092",
-        "POSTGRES_URL": "postgresql://test:test@localhost:5432/test",
-        "REDIS_URL": "redis://localhost:6379/1",
-    }
-
-
-# =============================================================================
-# Testcontainers Fixtures
-# =============================================================================
-
-
-@pytest.fixture(scope="session")
-def kafka_container():
-    """
-    Provide a Redpanda container for Kafka integration tests.
-
-    Uses RedpandaContainer which is Kafka-compatible but faster for testing.
-    """
-    with RedpandaContainer() as redpanda:
-        yield redpanda
+@pytest.fixture(scope="session", autouse=True)
+def log_bootstrap(kafka_bootstrap):
+    print(f"\n[pytest] Testcontainers Kafka at {kafka_bootstrap}\n", flush=True)
 
 
 @pytest.fixture(scope="session")
@@ -121,34 +65,9 @@ def postgres_container():
         yield postgres
 
 
-@pytest.fixture(scope="session")
-def docker_compose():
-    """
-    Provide full infrastructure stack using docker-compose.
-
-    This starts all services (Kafka, PostgreSQL, Redis) together.
-    """
-    compose_file = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "infra", "docker-compose.yml"
-    )
-
-    with DockerCompose(compose_file) as compose:
-        # Wait for services to be ready
-        compose.wait_for("kafka:9092")
-        compose.wait_for("postgres:5432")
-        compose.wait_for("redis:6379")
-        yield compose
-
-
-# =============================================================================
-# Database Fixtures
-# =============================================================================
-
-
 @pytest.fixture
 def db_connection(postgres_container):
     """Database connection for integration tests."""
-    import psycopg
     from sqlalchemy import create_engine
 
     connection_url = postgres_container.get_connection_url()
@@ -171,87 +90,6 @@ def db_session(db_connection):
 
     session.rollback()
     session.close()
-
-
-# =============================================================================
-# Kafka Fixtures
-# =============================================================================
-
-
-@pytest.fixture
-def kafka_bootstrap_servers(kafka_bootstrap):
-    """Kafka bootstrap servers for integration tests."""
-    return kafka_bootstrap
-
-
-@pytest.fixture
-def kafka_producer(kafka_bootstrap_servers):
-    """Kafka producer for integration tests."""
-    import json
-
-    from kafka import KafkaProducer
-
-    producer = KafkaProducer(
-        bootstrap_servers=kafka_bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        key_serializer=lambda k: k.encode("utf-8") if k else None,
-        acks="all",
-        retries=3,
-    )
-
-    yield producer
-
-    producer.close()
-
-
-@pytest.fixture
-def kafka_consumer(kafka_bootstrap_servers, kafka_topic):
-    """Kafka consumer for integration tests."""
-    import json
-
-    from kafka import KafkaConsumer
-
-    consumer = KafkaConsumer(
-        kafka_topic,
-        bootstrap_servers=kafka_bootstrap_servers,
-        group_id=f"test-group-{uuid.uuid4().hex[:8]}",
-        auto_offset_reset="earliest",
-        enable_auto_commit=False,
-        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-        key_deserializer=lambda k: k.decode("utf-8") if k else None,
-        consumer_timeout_ms=5000,
-    )
-
-    yield consumer
-
-    consumer.close()
-
-
-@pytest.fixture
-def kafka_topic():
-    """Unique test topic name to avoid message cross-contamination."""
-    return f"test-trips-{uuid.uuid4().hex[:8]}"
-
-
-@pytest.fixture
-def ensure_kafka_topic(kafka_bootstrap_servers, kafka_topic):
-    """Ensure Kafka topic exists before tests run."""
-    from kafka.admin import KafkaAdminClient, NewTopic
-
-    admin = KafkaAdminClient(bootstrap_servers=kafka_bootstrap_servers, client_id="test-admin")
-    existing = set(admin.list_topics())
-
-    if kafka_topic not in existing:
-        try:
-            admin.create_topics(
-                [NewTopic(name=kafka_topic, num_partitions=1, replication_factor=1)]
-            )
-        except Exception:
-            # Topic might appear due to race; ignore if already exists
-            pass
-
-    admin.close()
-    return kafka_topic
 
 
 # =============================================================================
@@ -333,6 +171,87 @@ def sample_events():
 
 
 # =============================================================================
+# Kafka Integration Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def kafka_bootstrap_servers(kafka_bootstrap):
+    """Kafka bootstrap servers for integration tests."""
+    return kafka_bootstrap
+
+
+@pytest.fixture
+def kafka_producer(kafka_bootstrap_servers):
+    """Kafka producer for integration tests."""
+    import json
+
+    from kafka import KafkaProducer
+
+    producer = KafkaProducer(
+        bootstrap_servers=kafka_bootstrap_servers,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        key_serializer=lambda k: k.encode("utf-8") if k else None,
+        acks="all",
+        retries=3,
+    )
+
+    yield producer
+
+    producer.close()
+
+
+@pytest.fixture
+def kafka_consumer(kafka_bootstrap_servers, kafka_topic):
+    """Kafka consumer for integration tests."""
+    import json
+
+    from kafka import KafkaConsumer
+
+    consumer = KafkaConsumer(
+        kafka_topic,
+        bootstrap_servers=kafka_bootstrap_servers,
+        group_id=f"test-group-{uuid.uuid4().hex[:8]}",
+        auto_offset_reset="earliest",
+        enable_auto_commit=False,
+        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+        key_deserializer=lambda k: k.decode("utf-8") if k else None,
+        consumer_timeout_ms=5000,
+    )
+
+    yield consumer
+
+    consumer.close()
+
+
+@pytest.fixture
+def kafka_topic():
+    """Unique test topic name to avoid message cross-contamination."""
+    return f"test-trips-{uuid.uuid4().hex[:8]}"
+
+
+@pytest.fixture
+def ensure_kafka_topic(kafka_bootstrap_servers, kafka_topic):
+    """Ensure Kafka topic exists before tests run."""
+    from kafka.admin import KafkaAdminClient, NewTopic
+
+    admin = KafkaAdminClient(bootstrap_servers=kafka_bootstrap_servers, client_id="test-admin")
+    existing = set(admin.list_topics())
+
+    if kafka_topic not in existing:
+        try:
+            admin.create_topics(
+                [NewTopic(name=kafka_topic, num_partitions=1, replication_factor=1)]
+            )
+        except Exception:
+            # Topic might appear due to race; ignore if already exists
+            pass
+
+    admin.close()
+    return kafka_topic
+
+
+# =============================================================================
 # Test Markers
 # =============================================================================
 
@@ -343,20 +262,3 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: Integration tests (require testcontainers)")
     config.addinivalue_line("markers", "e2e: End-to-end tests (full pipeline)")
     config.addinivalue_line("markers", "slow: Slow-running tests")
-
-
-def pytest_collection_modifyitems(config, items):
-    """
-    Automatically skip integration tests if testcontainers not available.
-    """
-    skip_integration = pytest.mark.skip(
-        reason="testcontainers not available or integration test requires Docker"
-    )
-
-    for item in items:
-        # Skip integration tests if testcontainers not available
-        if "integration" in item.keywords:
-            try:
-                import testcontainers
-            except ImportError:
-                item.add_marker(skip_integration)

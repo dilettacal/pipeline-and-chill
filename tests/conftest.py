@@ -4,7 +4,6 @@ Pytest configuration for ChillFlow tests.
 This module provides shared fixtures and configuration for all test suites.
 """
 
-import os
 import sys
 from pathlib import Path
 

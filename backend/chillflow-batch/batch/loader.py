@@ -4,12 +4,10 @@ Monthly loader for data curation and processing.
 Transforms raw parquet to curated with DQ rules and derived fields.
 """
 
-import logging
 from pathlib import Path
 from typing import Dict, Tuple
 
 import pandas as pd
-import structlog
 from core import get_logger
 
 logger = get_logger("chillflow-batch.loader")

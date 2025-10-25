@@ -68,7 +68,7 @@ def main():
         return 1
 
     try:
-        stats = create_curated_data(args.raw_file, args.curated_file, args.sample)
+        create_curated_data(args.raw_file, args.curated_file, args.sample)
         print(f"\n🎉 Successfully created curated data!")
         return 0
     except Exception as e:

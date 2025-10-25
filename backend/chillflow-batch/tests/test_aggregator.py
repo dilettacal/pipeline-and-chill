@@ -22,7 +22,7 @@ class TestBatchAggregator:
     def test_aggregate_incremental_parameters(self):
         """Test incremental aggregation parameters."""
         with patch("batch.aggregator.get_database_client"):
-            aggregator = BatchAggregator()
+            BatchAggregator()
 
             target_date = datetime(2025, 1, 15, 10, 30)
             lookback_hours = 12
@@ -38,7 +38,7 @@ class TestBatchAggregator:
     def test_aggregate_backfill_parameters(self):
         """Test backfill aggregation parameters."""
         with patch("batch.aggregator.get_database_client"):
-            aggregator = BatchAggregator()
+            BatchAggregator()
 
             start_date = datetime(2025, 1, 1, 15, 30)
             end_date = datetime(2025, 1, 5, 9, 45)

@@ -12,19 +12,16 @@ Usage:
 """
 
 import sys
-import time
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-import structlog
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from batch import BatchAggregator, BatchTripProducer, MonthlyLoader
-from core import get_database_client, get_logger, settings
+from batch import BatchAggregator, BatchTripProducer
+from core import get_database_client, get_logger
 from core.clients.database import get_db_session
 
 logger = get_logger("demo.chillflow_batch")

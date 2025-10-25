@@ -6,7 +6,7 @@ and common Redis operations for the ChillFlow system.
 """
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import redis
 from core.settings import settings

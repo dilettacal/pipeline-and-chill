@@ -25,7 +25,6 @@ def cli(log_level: str, service_name: str):
 @cli.group()
 def aggregate():
     """Aggregation commands."""
-    pass
 
 
 @aggregate.command()
@@ -86,7 +85,6 @@ def status():
 @cli.group()
 def process():
     """Processing commands."""
-    pass
 
 
 @process.command()
@@ -124,7 +122,6 @@ def trips(curated_path: Path, batch_size: int, source: str):
 @cli.group()
 def curate():
     """Data curation commands."""
-    pass
 
 
 @curate.command()
@@ -162,7 +159,6 @@ def month(raw_path: Path, curated_path: Path):
 @cli.group()
 def schedule():
     """Scheduling commands."""
-    pass
 
 
 @schedule.command()

@@ -7,11 +7,9 @@ Reads from stg.complete_trip and writes aggregated metrics to mart.zone_hourly_k
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-import structlog
-from core import CompleteTrip, Zone, get_database_client, get_logger
+from core import get_database_client, get_logger
 from core.clients.database import get_db_session
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 logger = get_logger("chillflow-batch.aggregator")

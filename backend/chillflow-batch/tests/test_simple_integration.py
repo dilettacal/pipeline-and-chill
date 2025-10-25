@@ -64,7 +64,6 @@ class TestBatchSimpleIntegration:
 
     def test_testcontainers_imports(self):
         """Test that testcontainers modules are available."""
-        from testcontainers.core.container import DockerContainer
         from testcontainers.postgres import PostgresContainer
 
         # Test that we can create container instances

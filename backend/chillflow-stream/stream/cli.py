@@ -6,16 +6,13 @@ trip event production and real-time processing.
 """
 
 import sys
-from pathlib import Path
 from typing import Optional
 
 import click
 import pandas as pd
 from core import get_logger as get_core_logger
 from core.clients.database import get_db_session
-from core.models.trip import CompleteTrip
 from sqlalchemy import text
-from structlog import get_logger
 
 from .trip_assembler import TripAssembler
 from .trip_event_producer import TripEventProducer

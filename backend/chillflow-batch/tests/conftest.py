@@ -5,10 +5,8 @@ This file provides testcontainers-based fixtures for proper integration testing
 with real PostgreSQL instances.
 """
 
-import os
 import uuid
 from datetime import datetime, timedelta
-from typing import Generator
 
 import pytest
 from core import CompleteTrip
@@ -50,7 +48,6 @@ def postgres_container():
 @pytest.fixture
 def db_connection(postgres_container):
     """Database connection for integration tests."""
-    import psycopg
     from sqlalchemy import create_engine
 
     # Get the connection URL and ensure it uses the psycopg driver
@@ -198,6 +195,6 @@ def pytest_collection_modifyitems(config, items):
         # Skip integration tests if testcontainers not available
         if "integration" in item.keywords:
             try:
-                import testcontainers
+                pass
             except ImportError:
                 item.add_marker(skip_integration)

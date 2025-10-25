@@ -18,8 +18,7 @@ sys.path.insert(0, str(backend_path / "chillflow-batch"))
 sys.path.insert(0, str(backend_path / "chillflow-stream"))
 
 from core import CompleteTrip
-from core.models.trip import CompleteTrip as TripModel
-from stream.events import PaymentProcessedEvent, TripEndedEvent, TripStartedEvent
+from stream.events import TripStartedEvent
 
 
 @pytest.mark.contract

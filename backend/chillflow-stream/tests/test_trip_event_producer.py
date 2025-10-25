@@ -3,17 +3,7 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pytest
-
-from stream.events import (
-    EventType,
-    PaymentProcessedEvent,
-    TripEndedEvent,
-    TripEvent,
-    TripStartedEvent,
-    ZoneEnteredEvent,
-    ZoneExitedEvent,
-)
+from stream.events import EventType, TripStartedEvent
 from stream.trip_event_producer import TripEventProducer
 
 

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Testcontainers)
 
 on:
   push:
@@ -7,53 +7,21 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  ci:
+  tests:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: test
-          POSTGRES_USER: test
-          POSTGRES_DB: test_chillflow
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-      redpanda:
-        image: redpandadata/redpanda:v24.1.7
-        ports:
-          - 9092:9092
-          - 9644:9644
-        options: >-
-          --health-cmd "bash -lc 'rpk cluster info --api-urls=localhost:9644 || exit 1'"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-        env:
-          REDPANDA_OVERPROVISIONED: "true"
-          REDPANDA_SMP: "1"
-          REDPANDA_MEMORY: "512M"
-          REDPANDA_RESERVE_MEMORY: "0M"
-          REDPANDA_NODE_ID: "0"
-          REDPANDA_CHECK: "false"
-          REDPANDA_KAFKA_ADDR: "PLAINTEXT://0.0.0.0:9092"
-          REDPANDA_ADVERTISE_KAFKA_ADDR: "PLAINTEXT://127.0.0.1:9092"
+    env:
+      # Enable Testcontainers in all environments
+      USE_TESTCONTAINERS: "true"
+      # Speed knobs for ephemeral runners
+      TESTCONTAINERS_CHECKS_DISABLE: "true"     # skip env diagnostics
+      TESTCONTAINERS_RYUK_DISABLED: "true"      # safe on GH-hosted runners
+      # Optional: reduce Kafka startup time by keeping tests simple
+      KAFKA_IT_TOPIC_PARTITIONS: "1"
+      KAFKA_IT_TOPIC_RF: "1"
+      # Database and Redis for Testcontainers
+      DATABASE_URL: "postgresql+psycopg://test:test@localhost:5432/test_chillflow"
+      REDIS_URL: "redis://localhost:6379"
+      HASH_SALT: "github-actions-test-salt"
 
     steps:
     - name: Checkout code
@@ -81,64 +49,21 @@ jobs:
       run: |
         uv sync --all-extras
 
-    - name: Set up environment variables
+    # Pre-pull images Testcontainers will use to save 30–60s
+    - name: Pre-pull Kafka & Ryuk images
       run: |
-        echo "DATABASE_URL=postgresql+psycopg://test:test@localhost:5432/test_chillflow" >> $GITHUB_ENV
-        echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
-        echo "KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:9092" >> $GITHUB_ENV
-        echo "USE_TESTCONTAINERS=false" >> $GITHUB_ENV
-        echo "TESTCONTAINERS_RYUK_DISABLED=false" >> $GITHUB_ENV
-        echo "HASH_SALT=github-actions-test-salt" >> $GITHUB_ENV
+        docker pull confluentinc/cp-kafka:7.6.1 || true
+        docker pull testcontainers/ryuk:0.6.0 || true
 
     - name: Code Quality Checks
       run: |
         echo "🔍 Running code quality checks..."
         uv run pre-commit run --all-files --config .pre-commit-config-ci.yaml
 
-    - name: Run Comprehensive Test Suite
+    - name: Run all tests (unit + integration with Testcontainers)
       run: |
-        echo "🧪 Running comprehensive test suite..."
+        echo "🧪 Running comprehensive test suite with Testcontainers..."
+        # Show Docker info for quick debugging
+        docker version
+        docker ps
         uv run make test TYPE=all
-
-    - name: Verify Kafka Connectivity
-      run: |
-        echo "🔍 Checking Kafka connectivity before tests..."
-        echo "KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}"
-        getent hosts redpanda || echo "redpanda not resolvable (expected for host job)"
-        python - <<'PY'
-        import os, sys, time
-        from kafka import KafkaAdminClient
-        bs = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-        print(f"CONNECTING TO {bs}", flush=True)
-        t0=time.time(); last=None
-        while time.time()-t0 < 30:
-            try:
-                KafkaAdminClient(bootstrap_servers=bs).list_topics()
-                print("✅ KAFKA OK")
-                sys.exit(0)
-            except Exception as e:
-                last=e; time.sleep(1)
-        print(f"❌ KAFKA NOT READY: {last}")
-        sys.exit(1)
-        PY
-
-    - name: Run Integration Tests
-      run: |
-        echo "🐳 Running integration tests with real Kafka (Redpanda)..."
-        echo "✅ Running stream integration tests with Kafka..."
-        uv run make test TYPE=stream-integration
-        echo "✅ Running batch integration tests with PostgreSQL..."
-        uv run make test TYPE=batch-integration
-
-    # Test artifacts are not needed for this project
-    # - name: Upload test results
-    #   uses: actions/upload-artifact@v4
-    #   if: always()
-    #   with:
-    #     name: test-results
-    #     path: |
-    #       .pytest_cache/
-    #       htmlcov/
-    #       coverage.xml
-    #     retention-days: 7
-    #   continue-on-error: true
