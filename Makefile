@@ -148,13 +148,6 @@ pipeline-batch: ## Run batch processing pipeline
 	@uv run python -m batch aggregate run
 	@echo "✅ Batch processing complete!"
 
-pipeline-stream: ## Run streaming pipeline
-	@echo "🌊 Running streaming pipeline..."
-	@echo "  1. Starting replay producer..."
-	@uv run python -m stream replay start
-	@echo "  2. Starting trip assembler..."
-	@uv run python -m stream assembler start
-	@echo "✅ Streaming pipeline active!"
 
 pipeline-analytics: ## Run analytics pipeline
 	@echo "📊 Running analytics pipeline..."
