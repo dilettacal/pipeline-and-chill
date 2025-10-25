@@ -137,7 +137,7 @@ class TestStreamCLIIntegration:
         assert "Assembled 50 trips" in result.output
         assert "Saved 50 trips to database" in result.output
 
-    @patch("stream.trip_assembler.KafkaConsumer")
+    @patch("kafka.KafkaConsumer")
     def test_consume_events_cli(self, mock_consumer_class, kafka_bootstrap):
         """Test consume-events CLI command."""
         # Mock consumer
@@ -158,12 +158,19 @@ class TestStreamCLIIntegration:
         # Mock the consumer to be iterable
         mock_consumer.__iter__ = Mock(return_value=iter([Mock(value=mock_event)]))
 
-        # Test CLI command
+        # Test CLI command with environment variable
+
         from click.testing import CliRunner
 
         runner = CliRunner()
 
-        result = runner.invoke(main, ["consume-events", "--timeout", "5"])
+        # Set the environment variable to use the Testcontainers Kafka
+        with runner.isolated_filesystem():
+            result = runner.invoke(
+                main,
+                ["consume-events", "--timeout", "5"],
+                env={"KAFKA_BOOTSTRAP_SERVERS": kafka_bootstrap},
+            )
 
         assert result.exit_code == 0
         assert "trip_started" in result.output

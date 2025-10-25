@@ -147,12 +147,15 @@ def consume_events(topic: str, timeout: int):
     try:
         import json
 
+        # Initialize consumer
+        import os
+
         from kafka import KafkaConsumer
 
-        # Initialize consumer
+        bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
         consumer = KafkaConsumer(
             topic,
-            bootstrap_servers=["localhost:9092"],
+            bootstrap_servers=[bootstrap_servers],
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
             auto_offset_reset="earliest",
             consumer_timeout_ms=timeout * 1000,
