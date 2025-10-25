@@ -5,7 +5,6 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from kafka import KafkaConsumer, KafkaProducer
-
 from stream.cli import main
 
 from ._kafka_helpers import ensure_topic

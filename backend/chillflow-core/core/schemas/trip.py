@@ -5,10 +5,11 @@ This module contains Pydantic models for validating and serializing
 trip data in the ChillFlow system.
 """
 
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from . import IsoDatetime
 
 
 class ZoneSchema(BaseModel):
@@ -19,9 +20,7 @@ class ZoneSchema(BaseModel):
     zone_name: str = Field(..., max_length=100, description="Zone name")
     service_zone: str = Field(..., max_length=50, description="Service zone")
 
-    model_config = ConfigDict(
-        from_attributes=True, json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CompleteTripSchema(BaseModel):
@@ -32,8 +31,8 @@ class CompleteTripSchema(BaseModel):
 
     # Trip metadata
     vendor_id: int = Field(..., ge=1, le=6, description="Taxi vendor ID")
-    pickup_ts: datetime = Field(..., description="Pickup timestamp")
-    dropoff_ts: datetime = Field(..., description="Dropoff timestamp")
+    pickup_ts: IsoDatetime = Field(..., description="Pickup timestamp")
+    dropoff_ts: IsoDatetime = Field(..., description="Dropoff timestamp")
 
     # Location data
     pu_zone_id: int = Field(..., ge=1, le=265, description="Pickup zone ID")
@@ -51,8 +50,8 @@ class CompleteTripSchema(BaseModel):
     vehicle_id_h: str = Field(..., max_length=16, description="Hashed vehicle ID")
 
     # Audit fields
-    created_at: Optional[datetime] = Field(None, description="Record creation timestamp")
-    updated_at: Optional[datetime] = Field(None, description="Record update timestamp")
+    created_at: Optional[IsoDatetime] = Field(None, description="Record creation timestamp")
+    updated_at: Optional[IsoDatetime] = Field(None, description="Record update timestamp")
 
     @field_validator("dropoff_ts")
     @classmethod
@@ -92,17 +91,15 @@ class CompleteTripSchema(BaseModel):
         """Check if trip has a tip."""
         return self.tip_amount is not None and self.tip_amount > 0
 
-    model_config = ConfigDict(
-        from_attributes=True, json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TripCreateSchema(BaseModel):
     """Schema for creating new trip records."""
 
     vendor_id: int = Field(..., ge=1, le=6)
-    pickup_ts: datetime = Field(...)
-    dropoff_ts: datetime = Field(...)
+    pickup_ts: IsoDatetime = Field(...)
+    dropoff_ts: IsoDatetime = Field(...)
     pu_zone_id: int = Field(..., ge=1, le=265)
     do_zone_id: int = Field(..., ge=1, le=265)
     passenger_count: Optional[int] = Field(None, ge=0, le=9)

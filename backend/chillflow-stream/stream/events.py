@@ -5,11 +5,11 @@ This module defines the event types that are generated when trips are split
 into individual signals/events for real-time processing.
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from core.schemas import IsoDatetime
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class EventType(str, Enum):
@@ -27,20 +27,15 @@ class EventType(str, Enum):
 class TripEvent(BaseModel):
     """Base event schema for all trip-related events."""
 
+    model_config = ConfigDict()
+
     event_id: str = Field(..., description="Unique event identifier")
     trip_key: str = Field(..., description="Trip identifier this event belongs to")
     event_type: EventType = Field(..., description="Type of event")
-    timestamp: datetime = Field(..., description="When the event occurred")
+    timestamp: IsoDatetime = Field(..., description="When the event occurred")
     vendor_id: int = Field(..., description="Taxi vendor ID")
     vehicle_id_h: str = Field(..., description="Hashed vehicle identifier")
     source: str = Field(default="stream", description="Event source")
-
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
 
 
 class TripStartedEvent(TripEvent):

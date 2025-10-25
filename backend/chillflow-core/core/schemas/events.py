@@ -5,11 +5,12 @@ This module contains Pydantic models for validating and serializing
 event messages in the ChillFlow streaming system.
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from . import IsoDatetime
 
 
 class EventType(str, Enum):
@@ -29,11 +30,9 @@ class BaseEvent(BaseModel):
     event_version: str = Field("1", description="Event schema version")
     trip_key: str = Field(..., max_length=64, description="Unique trip identifier")
     vehicle_id_h: str = Field(..., max_length=16, description="Hashed vehicle ID")
-    event_ts: datetime = Field(..., description="Event timestamp")
+    event_ts: IsoDatetime = Field(..., description="Event timestamp")
 
-    model_config = ConfigDict(
-        use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class IdentityEvent(BaseEvent):
@@ -41,7 +40,7 @@ class IdentityEvent(BaseEvent):
 
     event_type: EventType = Field(EventType.IDENTITY, description="Event type")
     vendor_id: int = Field(..., ge=1, le=6, description="Taxi vendor ID")
-    pickup_ts: datetime = Field(..., description="Pickup timestamp")
+    pickup_ts: IsoDatetime = Field(..., description="Pickup timestamp")
     pu_zone_id: int = Field(..., ge=1, le=265, description="Pickup zone ID")
     do_zone_id: int = Field(..., ge=1, le=265, description="Dropoff zone ID")
 
@@ -88,7 +87,7 @@ class DropEvent(BaseEvent):
     """Drop event - trip completion."""
 
     event_type: EventType = Field(EventType.DROP, description="Event type")
-    dropoff_ts: datetime = Field(..., description="Dropoff timestamp")
+    dropoff_ts: IsoDatetime = Field(..., description="Dropoff timestamp")
     do_zone_id: int = Field(..., ge=1, le=265, description="Dropoff zone ID")
     total_amount: float = Field(..., ge=0, description="Total amount in USD")
 
