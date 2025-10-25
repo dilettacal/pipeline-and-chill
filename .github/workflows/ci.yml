@@ -60,10 +60,29 @@ jobs:
         echo "🔍 Running code quality checks..."
         uv run pre-commit run --all-files --config .pre-commit-config-ci.yaml
 
-    - name: Run all tests (unit + integration with Testcontainers)
+    - name: Run Unit Tests
       run: |
-        echo "🧪 Running comprehensive test suite with Testcontainers..."
-        # Show Docker info for quick debugging
-        docker version
-        docker ps
-        uv run make test TYPE=all
+        echo "🧪 Running unit tests..."
+        uv run pytest tests/unit/ -v --tb=short
+
+    - name: Run Stream Service Tests
+      run: |
+        echo "🧪 Running stream service tests..."
+        cd backend/chillflow-stream
+        uv run pytest tests/ -v --tb=short
+
+    - name: Run Batch Service Tests
+      run: |
+        echo "🧪 Running batch service tests..."
+        cd backend/chillflow-batch
+        uv run pytest tests/ -v --tb=short
+
+    - name: Run Contract Tests
+      run: |
+        echo "🧪 Running contract tests..."
+        uv run pytest tests/contracts/ -v --tb=short
+
+    - name: Run Smoke Tests
+      run: |
+        echo "🧪 Running smoke tests..."
+        uv run pytest tests/smoke/ -v --tb=short
