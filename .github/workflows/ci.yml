@@ -51,11 +51,11 @@ jobs:
     - name: Start infrastructure with Docker Compose
       run: |
         cd platform/compose
-        docker-compose up -d postgres redis kafka zookeeper
+        docker compose up -d postgres redis kafka zookeeper
         # Wait for services to be ready
         sleep 30
         # Check service health
-        docker-compose ps
+        docker compose ps
 
     - name: Set up environment variables
       run: |
@@ -94,4 +94,4 @@ jobs:
       if: always()
       run: |
         cd platform/compose
-        docker-compose down -v
+        docker compose down -v
