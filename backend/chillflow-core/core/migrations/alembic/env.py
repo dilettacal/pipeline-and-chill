@@ -9,9 +9,7 @@ from sqlalchemy import engine_from_config, pool
 config = context.config
 
 # Override sqlalchemy.url with environment variable if present
-database_url = os.getenv(
-    "DATABASE_URL", "postgresql+psycopg://dev:dev@localhost:5432/chillflow"
-)
+database_url = os.getenv("DATABASE_URL", "postgresql+psycopg://dev:dev@localhost:5432/chillflow")
 config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.

@@ -312,7 +312,7 @@ def validate_data():
             "fluxframe",
             "-c",
             """
-SELECT 
+SELECT
     source,
     COUNT(*) as trips,
     MIN(pickup_ts) as first_trip,
@@ -340,7 +340,7 @@ ORDER BY source;
             "fluxframe",
             "-c",
             """
-SELECT 
+SELECT
     COUNT(*) as kpi_records,
     COUNT(DISTINCT zone_id) as zones_covered,
     MIN(hour_ts) as first_hour,
@@ -373,7 +373,7 @@ def show_analytics_examples():
             "fluxframe",
             "-c",
             """
-SELECT 
+SELECT
     z.zone_name,
     z.borough,
     SUM(k.trips) as total_trips,
@@ -402,7 +402,7 @@ LIMIT 10;
             "fluxframe",
             "-c",
             """
-SELECT 
+SELECT
     EXTRACT(HOUR FROM hour_ts) as hour_of_day,
     SUM(trips) as total_trips,
     TO_CHAR(AVG(avg_fare), 'FM$990.00') as avg_fare,

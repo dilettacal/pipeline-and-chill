@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class TripIdentity(BaseModel):
     trip_key: str

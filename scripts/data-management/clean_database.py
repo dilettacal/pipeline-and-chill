@@ -53,9 +53,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Clean database tables")
-    parser.add_argument(
-        "--confirm", action="store_true", help="Skip confirmation prompt"
-    )
+    parser.add_argument("--confirm", action="store_true", help="Skip confirmation prompt")
 
     args = parser.parse_args()
 

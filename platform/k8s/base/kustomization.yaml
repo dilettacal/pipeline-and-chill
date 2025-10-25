@@ -7,16 +7,16 @@ kind: Kustomization
 resources:
   # Database
   - postgres.yaml
-  
+
   # Cache
   - redis.yaml
-  
+
   # Message streaming
   - kafka.yaml
-  
+
   # Monitoring
   - monitoring.yaml
-  
+
   # Ingress
   - ingress.yaml
 

@@ -25,9 +25,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Add packages to path
-sys.path.insert(
-    0, str(Path(__file__).parent.parent / "packages" / "stream-trip-assembler")
-)
+sys.path.insert(0, str(Path(__file__).parent.parent / "packages" / "stream-trip-assembler"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "packages" / "core-utils"))
 
 import redis
@@ -91,8 +89,8 @@ def check_postgres():
                 text(
                     """
                 SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'stg' 
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'stg'
                     AND table_name = 'complete_trip'
                 )
             """
@@ -191,9 +189,7 @@ def send_sample_events():
     producer.close()
 
     print(f"\n✅ Sent {len(events)} events successfully!")
-    print(
-        f"\n💡 These events are now in Kafka waiting for the assembler to consume them."
-    )
+    print(f"\n💡 These events are now in Kafka waiting for the assembler to consume them.")
 
     return trip_key
 
@@ -289,9 +285,7 @@ def manual_event_sending_guide():
     print("    python scripts/demo/demo_trip_assembler.py\n")
 
     print("2️⃣  Redpanda command-line tools (rpk):")
-    print(
-        "    docker exec -it fluxframe-redpanda rpk topic produce trips.normalized \\"
-    )
+    print("    docker exec -it fluxframe-redpanda rpk topic produce trips.normalized \\")
     print("      --key demo_trip_123 \\")
     print("      --partition 0\n")
     print("    Then paste JSON events (one per line):\n")

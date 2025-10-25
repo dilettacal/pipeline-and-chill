@@ -147,16 +147,12 @@ def test_database_models():
         try:
             # Test that we can query the database
             result = session.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dim'"
-                )
+                text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dim'")
             ).fetchone()
             dim_tables = result[0] if result else 0
 
             result = session.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'stg'"
-                )
+                text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'stg'")
             ).fetchone()
             stg_tables = result[0] if result else 0
 

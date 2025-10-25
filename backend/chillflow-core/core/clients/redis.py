@@ -9,10 +9,9 @@ import json
 from typing import Any, Dict, List, Optional, Union
 
 import redis
-from redis.connection import ConnectionPool
-
 from core.settings import settings
 from core.utils.logging import get_logger
+from redis.connection import ConnectionPool
 
 logger = get_logger("redis-client")
 

@@ -1,33 +1,28 @@
 """Pydantic schemas for ChillFlow data validation and serialization."""
 
 from core.schemas.events import (
-                                      BaseEvent,
-                                      DropEvent,
-                                      EventType,
-                                      FareEvent,
-                                      IdentityEvent,
-                                      PassengersEvent,
-                                      TipEvent,
-                                      TripEventUnion,
-                                      deserialize_event,
+    BaseEvent,
+    DropEvent,
+    EventType,
+    FareEvent,
+    IdentityEvent,
+    PassengersEvent,
+    TipEvent,
+    TripEventUnion,
+    deserialize_event,
 )
-from core.schemas.trip import (
-                                      CompleteTripSchema,
-                                      TripCreateSchema,
-                                      TripUpdateSchema,
-                                      ZoneSchema,
-)
+from core.schemas.trip import CompleteTripSchema, TripCreateSchema, TripUpdateSchema, ZoneSchema
 
 __all__ = [
     # Trip schemas
     "CompleteTripSchema",
-    "TripCreateSchema", 
+    "TripCreateSchema",
     "TripUpdateSchema",
     "ZoneSchema",
     # Event schemas
     "BaseEvent",
     "IdentityEvent",
-    "PassengersEvent", 
+    "PassengersEvent",
     "FareEvent",
     "DropEvent",
     "TipEvent",

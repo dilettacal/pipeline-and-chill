@@ -1,11 +1,6 @@
 """ChillFlow Core Utilities - Shared utilities and settings."""
 
-from core.clients import (
-    get_database_client,
-    get_db_session,
-    get_kafka_client,
-    get_redis_client,
-)
+from core.clients import get_database_client, get_db_session, get_kafka_client, get_redis_client
 
 # Import data components
 from core.models import Base, CompleteTrip, Zone

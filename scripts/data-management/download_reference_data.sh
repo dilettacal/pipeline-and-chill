@@ -23,7 +23,7 @@ FAILED=0
 # Function to check if URL is valid (returns 0 if valid, 1 if not)
 check_url() {
     local url=$1
-    
+
     # Use HEAD request to check if URL exists without downloading
     # -s: silent, -f: fail on HTTP errors, -I: HEAD request only, -L: follow redirects
     if curl -s -f -I -L "$url" >/dev/null 2>&1; then
@@ -38,17 +38,17 @@ download_file() {
     local url=$1
     local output_file=$2
     local description=$3
-    
+
     echo ""
     echo "$description"
-    
+
     # Check if file already exists
     if [ -f "$output_file" ]; then
         echo "⏭️  File already exists, skipping..."
         SKIPPED=$((SKIPPED + 1))
         return
     fi
-    
+
     # Check if URL is valid
     echo "🔍 Checking URL..."
     if ! check_url "$url"; then
@@ -56,7 +56,7 @@ download_file() {
         FAILED=$((FAILED + 1))
         return
     fi
-    
+
     # Download the file
     echo "📥 Downloading..."
     if curl -f -L -o "$output_file" "$url" 2>/dev/null; then

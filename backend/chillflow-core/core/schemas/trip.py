@@ -40,26 +40,18 @@ class CompleteTripSchema(BaseModel):
     do_zone_id: int = Field(..., ge=1, le=265, description="Dropoff zone ID")
 
     # Trip details
-    passenger_count: Optional[int] = Field(
-        None, ge=0, le=9, description="Number of passengers"
-    )
-    trip_distance: Optional[float] = Field(
-        None, ge=0, description="Trip distance in miles"
-    )
+    passenger_count: Optional[int] = Field(None, ge=0, le=9, description="Number of passengers")
+    trip_distance: Optional[float] = Field(None, ge=0, description="Trip distance in miles")
     fare_amount: Optional[float] = Field(None, ge=0, description="Fare amount in USD")
     tip_amount: Optional[float] = Field(None, ge=0, description="Tip amount in USD")
     total_amount: Optional[float] = Field(None, ge=0, description="Total amount in USD")
-    payment_type: Optional[int] = Field(
-        None, ge=1, le=6, description="Payment type code"
-    )
+    payment_type: Optional[int] = Field(None, ge=1, le=6, description="Payment type code")
 
     # Vehicle information
     vehicle_id_h: str = Field(..., max_length=16, description="Hashed vehicle ID")
 
     # Audit fields
-    created_at: Optional[datetime] = Field(
-        None, description="Record creation timestamp"
-    )
+    created_at: Optional[datetime] = Field(None, description="Record creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Record update timestamp")
 
     @field_validator("dropoff_ts")

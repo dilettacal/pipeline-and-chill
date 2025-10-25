@@ -4,16 +4,7 @@ SQLAlchemy models for database tables.
 This module contains shared database models used across multiple packages.
 """
 
-from sqlalchemy import (
-    CHAR,
-    TIMESTAMP,
-    Column,
-    Index,
-    Integer,
-    Numeric,
-    SmallInteger,
-    String,
-)
+from sqlalchemy import CHAR, TIMESTAMP, Column, Index, Integer, Numeric, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()

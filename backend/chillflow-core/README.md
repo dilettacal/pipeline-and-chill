@@ -65,7 +65,7 @@ from chillflow import get_db_session, CompleteTrip, CompleteTripSchema
 with get_db_session() as session:
     # Query trips
     trips = session.query(CompleteTrip).limit(10).all()
-    
+
     # Create trip from schema
     trip_data = CompleteTripSchema(
         trip_key="abc123",
@@ -76,7 +76,7 @@ with get_db_session() as session:
         do_zone_id=230,
         vehicle_id_h="hashed_vehicle_id"
     )
-    
+
     # Convert to SQLAlchemy model
     trip = CompleteTrip(**trip_data.model_dump())
     session.add(trip)
@@ -155,4 +155,3 @@ print(event.model_dump_json())
 - `redis` - Redis client
 - `kafka-python` - Kafka client
 - `structlog` - Structured logging framework
-

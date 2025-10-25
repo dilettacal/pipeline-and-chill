@@ -54,27 +54,27 @@ docker exec fluxframe-postgres psql -U dev -d fluxframe -c "SELECT COUNT(*) as t
 echo ""
 echo "📋 Recent Trips:"
 docker exec fluxframe-postgres psql -U dev -d fluxframe -c "
-SELECT 
+SELECT
     LEFT(trip_key, 16) || '...' as trip_key,
     TO_CHAR(pickup_ts, 'YYYY-MM-DD HH24:MI') as pickup,
     fare_amount,
     passenger_count as passengers,
     source
-FROM stg.complete_trip 
-ORDER BY last_update_ts DESC 
-LIMIT 5;" 
+FROM stg.complete_trip
+ORDER BY last_update_ts DESC
+LIMIT 5;"
 
 echo ""
 echo "📊 Trips by Source:"
 docker exec fluxframe-postgres psql -U dev -d fluxframe -c "
-SELECT 
+SELECT
     source,
     COUNT(*) as trips,
     TO_CHAR(SUM(fare_amount), 'FM$999,990.00') as total_fare,
     TO_CHAR(AVG(fare_amount), 'FM$990.00') as avg_fare
-FROM stg.complete_trip 
-GROUP BY source 
-ORDER BY trips DESC;" 
+FROM stg.complete_trip
+GROUP BY source
+ORDER BY trips DESC;"
 
 echo ""
 echo "========================================================================"
@@ -86,4 +86,3 @@ echo "   Assembler: tail -f /tmp/assembler.log"
 echo ""
 echo "🛑 To stop assembler: kill $ASSEMBLER_PID"
 echo ""
-

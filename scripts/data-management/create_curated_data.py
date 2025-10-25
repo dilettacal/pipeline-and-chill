@@ -56,13 +56,9 @@ def create_curated_data(raw_file: Path, curated_file: Path, sample_size: int = N
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(
-        description="Create curated data from raw NYC taxi data"
-    )
+    parser = argparse.ArgumentParser(description="Create curated data from raw NYC taxi data")
     parser.add_argument("raw_file", type=Path, help="Path to raw parquet file")
-    parser.add_argument(
-        "curated_file", type=Path, help="Path to output curated parquet file"
-    )
+    parser.add_argument("curated_file", type=Path, help="Path to output curated parquet file")
     parser.add_argument("--sample", type=int, help="Sample size for testing (optional)")
 
     args = parser.parse_args()

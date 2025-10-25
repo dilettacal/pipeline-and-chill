@@ -89,18 +89,10 @@ def upgrade() -> None:
     )
 
     # Create indexes for performance
-    op.create_index(
-        "idx_complete_trip_pickup_ts", "complete_trip", ["pickup_ts"], schema="stg"
-    )
-    op.create_index(
-        "idx_complete_trip_pu_zone", "complete_trip", ["pu_zone_id"], schema="stg"
-    )
-    op.create_index(
-        "idx_complete_trip_do_zone", "complete_trip", ["do_zone_id"], schema="stg"
-    )
-    op.create_index(
-        "idx_complete_trip_vendor", "complete_trip", ["vendor_id"], schema="stg"
-    )
+    op.create_index("idx_complete_trip_pickup_ts", "complete_trip", ["pickup_ts"], schema="stg")
+    op.create_index("idx_complete_trip_pu_zone", "complete_trip", ["pu_zone_id"], schema="stg")
+    op.create_index("idx_complete_trip_do_zone", "complete_trip", ["do_zone_id"], schema="stg")
+    op.create_index("idx_complete_trip_vendor", "complete_trip", ["vendor_id"], schema="stg")
 
     # Create mart.zone_hourly_kpis table
     op.create_table(
@@ -144,9 +136,7 @@ def downgrade() -> None:
     op.drop_index("idx_complete_trip_vendor", table_name="complete_trip", schema="stg")
     op.drop_index("idx_complete_trip_do_zone", table_name="complete_trip", schema="stg")
     op.drop_index("idx_complete_trip_pu_zone", table_name="complete_trip", schema="stg")
-    op.drop_index(
-        "idx_complete_trip_pickup_ts", table_name="complete_trip", schema="stg"
-    )
+    op.drop_index("idx_complete_trip_pickup_ts", table_name="complete_trip", schema="stg")
 
     # Drop tables
     op.drop_table("zone_hourly_kpis", schema="mart")

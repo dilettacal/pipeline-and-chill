@@ -57,9 +57,7 @@ class TestPlatformInfrastructure:
         redis_client.set("test:chillflow", "infrastructure_test", ex=60)
         value = redis_client.get("test:chillflow")
 
-        assert (
-            value and value.decode() == "infrastructure_test"
-        ), "Redis read/write failed"
+        assert value and value.decode() == "infrastructure_test", "Redis read/write failed"
 
     def test_database_models(self):
         """Test database models and schemas."""
@@ -88,16 +86,12 @@ class TestPlatformInfrastructure:
         try:
             # Test that we can query the database
             result = session.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dim'"
-                )
+                text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dim'")
             ).fetchone()
             dim_tables = result[0] if result else 0
 
             result = session.execute(
-                text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'stg'"
-                )
+                text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'stg'")
             ).fetchone()
             stg_tables = result[0] if result else 0
 

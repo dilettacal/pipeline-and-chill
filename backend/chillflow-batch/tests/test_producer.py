@@ -244,7 +244,7 @@ class TestBatchTripProducer:
                     "avg_speed_kmh": 16.0,
                     "last_update_ts": datetime.now(),
                     "source": "test",
-                }
+                },
             ]
 
             # Test the upsert functionality
@@ -253,6 +253,6 @@ class TestBatchTripProducer:
             # Should upsert both records (even though they have the same trip_key)
             assert upserted == 2
             assert skipped == 0
-            
+
             # Verify that session.merge was called for each trip (for the upsert operation)
             assert mock_session.merge.call_count == 2

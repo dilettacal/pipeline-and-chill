@@ -50,9 +50,7 @@ def setup_console_logging(
                 else structlog.processors.KeyValueRenderer()
             ),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(logging, log_level.upper())
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, log_level.upper())),
         logger_factory=LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -103,9 +101,7 @@ def setup_json_file_logging(
             structlog.processors.TimeStamper(fmt="ISO"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(logging, log_level.upper())
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, log_level.upper())),
         logger_factory=LoggerFactory(),
         cache_logger_on_first_use=True,
     )

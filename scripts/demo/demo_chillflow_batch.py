@@ -76,13 +76,7 @@ def load_sample_data():
 
     # Load January 2025 data (first 10,000 rows)
     data_file = (
-        project_root
-        / "data"
-        / "raw"
-        / "yellow"
-        / "2025"
-        / "01"
-        / "yellow_tripdata_2025-01.parquet"
+        project_root / "data" / "raw" / "yellow" / "2025" / "01" / "yellow_tripdata_2025-01.parquet"
     )
 
     if not data_file.exists():
@@ -97,11 +91,7 @@ def load_sample_data():
     print(f"📊 Sample size: {len(sample_df):,} trips")
 
     # Process the data using MonthlyLoader functions
-    from batch.loader import (
-        apply_dq_rules,
-        compute_derived_fields,
-        standardize_column_names,
-    )
+    from batch.loader import apply_dq_rules, compute_derived_fields, standardize_column_names
 
     # Step 1: Compute derived fields (using original column names)
     sample_df = compute_derived_fields(sample_df)
@@ -146,7 +136,7 @@ def run_aggregation():
         result = session.execute(
             text(
                 """
-            SELECT 
+            SELECT
                 MIN(pickup_ts) as min_ts,
                 MAX(pickup_ts) as max_ts,
                 COUNT(*) as trip_count
@@ -193,9 +183,7 @@ def show_results():
         # Get date range
         date_range = aggregator.get_date_range()
         if date_range:
-            print(
-                f"📅 KPI date range: {date_range['min_hour']} to {date_range['max_hour']}"
-            )
+            print(f"📅 KPI date range: {date_range['min_hour']} to {date_range['max_hour']}")
         else:
             print("📅 No KPI data found")
 
@@ -210,7 +198,7 @@ def show_results():
             result = session.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     zone_id,
                     hour_ts,
                     trips,
@@ -235,25 +223,15 @@ def show_results():
                 )
                 print("─" * 100)
                 for row in rows:
-                    avg_fare = (
-                        f"${row.avg_fare:.2f}" if row.avg_fare is not None else "N/A"
-                    )
-                    avg_tip = (
-                        f"${row.avg_tip:.2f}" if row.avg_tip is not None else "N/A"
-                    )
+                    avg_fare = f"${row.avg_fare:.2f}" if row.avg_fare is not None else "N/A"
+                    avg_tip = f"${row.avg_tip:.2f}" if row.avg_tip is not None else "N/A"
                     avg_speed = (
-                        f"{row.avg_speed_kmh:.1f}"
-                        if row.avg_speed_kmh is not None
-                        else "N/A"
+                        f"{row.avg_speed_kmh:.1f}" if row.avg_speed_kmh is not None else "N/A"
                     )
                     avg_distance = (
-                        f"{row.avg_distance_km:.1f}"
-                        if row.avg_distance_km is not None
-                        else "N/A"
+                        f"{row.avg_distance_km:.1f}" if row.avg_distance_km is not None else "N/A"
                     )
-                    pct_card = (
-                        f"{row.pct_card:.1f}" if row.pct_card is not None else "N/A"
-                    )
+                    pct_card = f"{row.pct_card:.1f}" if row.pct_card is not None else "N/A"
 
                     print(
                         f"{row.zone_id:4} | {row.hour_ts} | {row.trips:5} | {avg_fare:>7} | {avg_tip:>6} | {avg_speed:>5} | {avg_distance:>8} | {pct_card:>5}% | {row.unique_vehicles:9}"

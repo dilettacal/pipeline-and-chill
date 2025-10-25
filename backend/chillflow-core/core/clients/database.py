@@ -8,14 +8,13 @@ and common database operations for the ChillFlow system.
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, Optional
 
+from core.models import Base
+from core.settings import settings
+from core.utils.logging import get_logger
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
-
-from core.models import Base
-from core.settings import settings
-from core.utils.logging import get_logger
 
 logger = get_logger("database-client")
 
@@ -49,17 +48,11 @@ class DatabaseClient:
                 echo=False,  # Set to True for SQL query logging
             )
 
-            self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+            self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
             logger.info(
                 "Database engine initialized",
-                url=(
-                    self.database_url.split("@")[1]
-                    if "@" in self.database_url
-                    else "configured"
-                ),
+                url=(self.database_url.split("@")[1] if "@" in self.database_url else "configured"),
             )
 
         except Exception as e:
@@ -147,11 +140,7 @@ class DatabaseClient:
 
         return {
             "status": "connected",
-            "url": (
-                self.database_url.split("@")[1]
-                if "@" in self.database_url
-                else "configured"
-            ),
+            "url": (self.database_url.split("@")[1] if "@" in self.database_url else "configured"),
             "pool_size": self.engine.pool.size(),
             "checked_in": self.engine.pool.checkedin(),
             "checked_out": self.engine.pool.checkedout(),

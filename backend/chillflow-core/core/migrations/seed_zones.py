@@ -16,9 +16,7 @@ def seed_zones():
     """Load taxi zone lookup data into dim.zone table."""
 
     # Database connection
-    database_url = os.getenv(
-        "DATABASE_URL", "postgresql://dev:dev@localhost:5432/chillflow"
-    )
+    database_url = os.getenv("DATABASE_URL", "postgresql://dev:dev@localhost:5432/chillflow")
 
     # Path to CSV file
     project_root = Path(__file__).parent.parent.parent.parent.parent

@@ -29,9 +29,7 @@ def test_hashing_functions():
     assert len(trip_key) == 64  # SHA256 hex length
 
     # Test vehicle ID hashing
-    vehicle_id = generate_vehicle_id_h(
-        salt="test-salt", vendor_id=1, row_offset=0, fleet_size=5000
-    )
+    vehicle_id = generate_vehicle_id_h(salt="test-salt", vendor_id=1, row_offset=0, fleet_size=5000)
     assert isinstance(vehicle_id, str)
     assert vehicle_id.startswith("veh_")
     assert len(vehicle_id) == 16  # "veh_" + 12 chars

@@ -15,15 +15,11 @@ logger = get_logger("chillflow-batch.cli")
 
 @click.group()
 @click.option("--log-level", default="INFO", help="Log level")
-@click.option(
-    "--service-name", default="chillflow-batch", help="Service name for logging"
-)
+@click.option("--service-name", default="chillflow-batch", help="Service name for logging")
 def cli(log_level: str, service_name: str):
     """ChillFlow Batch Processing Service CLI."""
     setup_development_logging(service_name)
-    logger.info(
-        "ChillFlow Batch CLI started", log_level=log_level, service_name=service_name
-    )
+    logger.info("ChillFlow Batch CLI started", log_level=log_level, service_name=service_name)
 
 
 @cli.group()
@@ -33,9 +29,7 @@ def aggregate():
 
 
 @aggregate.command()
-@click.option(
-    "--incremental", is_flag=True, help="Perform incremental aggregation for yesterday"
-)
+@click.option("--incremental", is_flag=True, help="Perform incremental aggregation for yesterday")
 def run(incremental: bool):
     """Run aggregation job."""
     aggregator = BatchAggregator()
@@ -76,9 +70,7 @@ def status():
 
         click.echo(f"📊 KPI Records: {count:,}")
         if date_range:
-            click.echo(
-                f"📅 Date Range: {date_range['min_hour']} to {date_range['max_hour']}"
-            )
+            click.echo(f"📅 Date Range: {date_range['min_hour']} to {date_range['max_hour']}")
         else:
             click.echo("📅 Date Range: No data")
 
@@ -112,9 +104,7 @@ def trips(curated_path: Path, batch_size: int, source: str):
             batch_size=batch_size,
             source=source,
         )
-        stats = producer.process_month(
-            curated_path, batch_size=batch_size, source=source
-        )
+        stats = producer.process_month(curated_path, batch_size=batch_size, source=source)
 
         click.echo(f"✅ Processing complete:")
         click.echo(f"   📊 Rows read: {stats['rows_read']:,}")

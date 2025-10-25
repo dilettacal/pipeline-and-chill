@@ -8,11 +8,10 @@ in the ChillFlow streaming system.
 import json
 from typing import Any, Dict, List, Optional
 
-from kafka import KafkaConsumer, KafkaProducer
-from kafka.errors import KafkaError
-
 from core.settings import settings
 from core.utils.logging import get_logger
+from kafka import KafkaConsumer, KafkaProducer
+from kafka.errors import KafkaError
 
 logger = get_logger("kafka-client")
 
@@ -104,9 +103,7 @@ class KafkaProducerClient:
             if self.send_message(topic, message):
                 sent_count += 1
 
-        logger.info(
-            "Batch sent to Kafka", topic=topic, sent=sent_count, total=len(messages)
-        )
+        logger.info("Batch sent to Kafka", topic=topic, sent=sent_count, total=len(messages))
         return sent_count
 
     def flush(self) -> None:

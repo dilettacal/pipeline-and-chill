@@ -35,7 +35,7 @@ def generate_reports():
         trip_stats = session.execute(
             text(
                 """
-            SELECT 
+            SELECT
                 COUNT(*) as total_trips,
                 COUNT(DISTINCT pu_zone_id) as pickup_zones,
                 COUNT(DISTINCT do_zone_id) as dropoff_zones,
@@ -53,7 +53,7 @@ def generate_reports():
         kpi_stats = session.execute(
             text(
                 """
-            SELECT 
+            SELECT
                 COUNT(*) as total_kpis,
                 COUNT(DISTINCT zone_id) as zones_with_kpis,
                 AVG(trips) as avg_trips_per_hour,
@@ -68,7 +68,7 @@ def generate_reports():
         zone_stats = session.execute(
             text(
                 """
-            SELECT 
+            SELECT
                 COUNT(*) as total_zones,
                 COUNT(DISTINCT borough) as boroughs,
                 COUNT(DISTINCT service_zone) as service_zones
@@ -108,7 +108,7 @@ def generate_reports():
         top_zones = session.execute(
             text(
                 """
-            SELECT 
+            SELECT
                 z.zone_name,
                 z.borough,
                 COUNT(*) as trip_count,

@@ -26,13 +26,13 @@ HEALTHY=0
 
 for file in $FILES; do
     CHECKED=$((CHECKED + 1))
-    
+
     # Get file size (works on both macOS and Linux)
     FILE_SIZE=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
-    
+
     IS_CORRUPTED=0
     REASON=""
-    
+
     # Check if file is suspiciously small
     if [ "$FILE_SIZE" -lt 1000 ]; then
         # Check for error patterns
@@ -44,18 +44,18 @@ for file in $FILES; do
             REASON="Empty file"
         fi
     fi
-    
+
     if [ "$IS_CORRUPTED" -eq 1 ]; then
         echo "❌ CORRUPTED: $(basename "$file")"
         echo "   Path: $file"
         echo "   Reason: $REASON"
-        
+
         # Show first few lines if it's a text error
         if [ "$FILE_SIZE" -lt 500 ]; then
             echo "   Content preview:"
             head -3 "$file" 2>/dev/null | sed 's/^/   │ /'
         fi
-        
+
         echo "   Removing..."
         rm "$file"
         CORRUPTED=$((CORRUPTED + 1))
@@ -77,4 +77,3 @@ if [ "$CORRUPTED" -gt 0 ]; then
     echo "💡 Tip: Re-run the download script when data becomes available"
     echo "   ./scripts/data-management/download_nyc_data.sh"
 fi
-

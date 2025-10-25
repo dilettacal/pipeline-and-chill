@@ -37,9 +37,7 @@ class BatchTripProducer:
         """Initialize batch processor."""
         self.db_client = get_database_client()
         self.hash_salt = settings.HASH_SALT
-        logger.info(
-            "Batch trip producer initialized", hash_salt_length=len(self.hash_salt)
-        )
+        logger.info("Batch trip producer initialized", hash_salt_length=len(self.hash_salt))
 
     def process_month(
         self, curated_path: Path, batch_size: int = 1000, source: str = "batch"
@@ -82,9 +80,7 @@ class BatchTripProducer:
         trips = self._dataframe_to_trips(df, source=source)
 
         # Upsert to database in batches
-        logger.info(
-            "Upserting to database", batch_size=batch_size, total_trips=len(trips)
-        )
+        logger.info("Upserting to database", batch_size=batch_size, total_trips=len(trips))
         stats = self._write_trips_batch(trips, batch_size=batch_size)
 
         # Calculate duration
@@ -102,16 +98,12 @@ class BatchTripProducer:
             upserted=stats["inserted"],
             skipped=stats["skipped"],
             duration_sec=duration_sec,
-            throughput_trips_per_sec=(
-                len(trips) / duration_sec if duration_sec > 0 else 0
-            ),
+            throughput_trips_per_sec=(len(trips) / duration_sec if duration_sec > 0 else 0),
         )
 
         return result
 
-    def _dataframe_to_trips(
-        self, df: pd.DataFrame, source: str = "batch"
-    ) -> List[Dict[str, any]]:
+    def _dataframe_to_trips(self, df: pd.DataFrame, source: str = "batch") -> List[Dict[str, any]]:
         """
         Convert DataFrame rows to trip dictionaries.
 
@@ -128,9 +120,7 @@ class BatchTripProducer:
         now = datetime.now()
 
         # Use tqdm for progress bar
-        for idx, row in tqdm(
-            df.iterrows(), total=len(df), desc="Processing trips", unit=" trips"
-        ):
+        for idx, row in tqdm(df.iterrows(), total=len(df), desc="Processing trips", unit=" trips"):
             # Generate identifiers
             trip_key = generate_trip_key(
                 salt=self.hash_salt,
@@ -153,43 +143,27 @@ class BatchTripProducer:
                 "vehicle_id_h": vehicle_id_h,
                 "pickup_ts": row["pickup_ts"],
                 "dropoff_ts": row["dropoff_ts"],
-                "pu_zone_id": (
-                    int(row["pu_zone_id"]) if pd.notna(row["pu_zone_id"]) else None
-                ),
-                "do_zone_id": (
-                    int(row["do_zone_id"]) if pd.notna(row["do_zone_id"]) else None
-                ),
+                "pu_zone_id": (int(row["pu_zone_id"]) if pd.notna(row["pu_zone_id"]) else None),
+                "do_zone_id": (int(row["do_zone_id"]) if pd.notna(row["do_zone_id"]) else None),
                 "passenger_count": (
-                    int(row["passenger_count"])
-                    if pd.notna(row["passenger_count"])
-                    else None
+                    int(row["passenger_count"]) if pd.notna(row["passenger_count"]) else None
                 ),
-                "rate_code": (
-                    int(row["rate_code"]) if pd.notna(row["rate_code"]) else None
-                ),
+                "rate_code": (int(row["rate_code"]) if pd.notna(row["rate_code"]) else None),
                 "store_and_fwd_flag": (
-                    row["store_and_fwd_flag"]
-                    if pd.notna(row["store_and_fwd_flag"])
-                    else None
+                    row["store_and_fwd_flag"] if pd.notna(row["store_and_fwd_flag"]) else None
                 ),
                 "fare_amount": (
                     float(row["fare_amount"]) if pd.notna(row["fare_amount"]) else None
                 ),
                 "total_amount": (
-                    float(row["total_amount"])
-                    if pd.notna(row["total_amount"])
-                    else None
+                    float(row["total_amount"]) if pd.notna(row["total_amount"]) else None
                 ),
                 "payment_type": (
                     int(row["payment_type"]) if pd.notna(row["payment_type"]) else None
                 ),
-                "tip_amount": (
-                    float(row["tip_amount"]) if pd.notna(row["tip_amount"]) else None
-                ),
+                "tip_amount": (float(row["tip_amount"]) if pd.notna(row["tip_amount"]) else None),
                 "tolls_amount": (
-                    float(row["tolls_amount"])
-                    if pd.notna(row["tolls_amount"])
-                    else None
+                    float(row["tolls_amount"]) if pd.notna(row["tolls_amount"]) else None
                 ),
                 "congestion_surcharge": (
                     float(row["congestion_surcharge"])
@@ -203,14 +177,10 @@ class BatchTripProducer:
                     float(row["distance_km"]) if pd.notna(row["distance_km"]) else None
                 ),
                 "duration_min": (
-                    float(row["duration_min"])
-                    if pd.notna(row["duration_min"])
-                    else None
+                    float(row["duration_min"]) if pd.notna(row["duration_min"]) else None
                 ),
                 "avg_speed_kmh": (
-                    float(row["avg_speed_kmh"])
-                    if pd.notna(row["avg_speed_kmh"])
-                    else None
+                    float(row["avg_speed_kmh"]) if pd.notna(row["avg_speed_kmh"]) else None
                 ),
                 "last_update_ts": now,
                 "source": source,
@@ -224,9 +194,7 @@ class BatchTripProducer:
         logger.info("Converted DataFrame to trips", total_trips=len(trips))
         return trips
 
-    def _write_trips_batch(
-        self, trips: List[Dict], batch_size: int = 1000
-    ) -> Dict[str, int]:
+    def _write_trips_batch(self, trips: List[Dict], batch_size: int = 1000) -> Dict[str, int]:
         """
         Write trips to database in batches.
 

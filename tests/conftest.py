@@ -30,15 +30,9 @@ def project_root():
 # Markers for different test types
 def pytest_configure(config):
     """Configure pytest markers."""
-    config.addinivalue_line(
-        "markers", "unit: Unit tests that don't require external dependencies"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests that don't require external dependencies")
     config.addinivalue_line(
         "markers", "integration: Integration tests that require external services"
     )
-    config.addinivalue_line(
-        "markers", "infrastructure: Infrastructure tests that require Docker"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: End-to-end tests that require full platform"
-    )
+    config.addinivalue_line("markers", "infrastructure: Infrastructure tests that require Docker")
+    config.addinivalue_line("markers", "e2e: End-to-end tests that require full platform")

@@ -142,9 +142,7 @@ def main():
         default=Path.cwd() / "data",
         help="Root data directory (default: ./data)",
     )
-    parser.add_argument(
-        "--force", action="store_true", help="Overwrite existing curated files"
-    )
+    parser.add_argument("--force", action="store_true", help="Overwrite existing curated files")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
@@ -168,9 +166,7 @@ def main():
     results = []
     for year, month, raw_file in raw_files:
         month_str = f"{year}-{month}"
-        curated_file = (
-            args.data_root / "curated" / "yellow" / year / month / "trips_clean.parquet"
-        )
+        curated_file = args.data_root / "curated" / "yellow" / year / month / "trips_clean.parquet"
 
         # Check if curated file already exists
         if curated_file.exists() and not args.force:

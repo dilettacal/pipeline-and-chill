@@ -156,3 +156,15 @@ setup-env: ## Create .env file from template
 		echo "📝 Edit it manually if you need to change settings"; \
 	fi
 
+# Code quality and linting
+lint: ## Run pre-commit hooks on all files
+	@echo "🔍 Running pre-commit hooks on all files..."
+	uv run pre-commit run --all-files
+
+lint-fix: ## Run pre-commit hooks and auto-fix issues
+	@echo "🔧 Running pre-commit hooks with auto-fix..."
+	uv run pre-commit run --all-files --hook-stage manual
+
+lint-update: ## Update pre-commit hooks to latest versions
+	@echo "🔄 Updating pre-commit hooks..."
+	uv run pre-commit autoupdate

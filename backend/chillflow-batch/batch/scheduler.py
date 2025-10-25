@@ -38,9 +38,7 @@ class BatchScheduler:
             hour: Hour to run (24-hour format)
             minute: Minute to run
         """
-        schedule.every().day.at(f"{hour:02d}:{minute:02d}").do(
-            self._run_daily_aggregation
-        )
+        schedule.every().day.at(f"{hour:02d}:{minute:02d}").do(self._run_daily_aggregation)
         logger.info("Scheduled daily aggregation", hour=hour, minute=minute)
 
     def schedule_hourly_aggregation(self, minute: int = 0):

@@ -82,9 +82,7 @@ def apply_dq_rules(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int]]:
     temporal_valid = df["tpep_pickup_datetime"] < df["tpep_dropoff_datetime"]
     rejections["temporal_invalid"] = (~temporal_valid).sum()
     df = df[temporal_valid]
-    logger.info(
-        "Rule 1 (temporal validity) applied", rejected=rejections["temporal_invalid"]
-    )
+    logger.info("Rule 1 (temporal validity) applied", rejected=rejections["temporal_invalid"])
 
     # Rule 2: Speed limit (avg_speed_kmh <= 200)
     # Handle NaN values (trips with 0 duration)
@@ -97,9 +95,7 @@ def apply_dq_rules(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int]]:
     amount_valid = df["total_amount"] >= 0
     rejections["negative_amount"] = (~amount_valid).sum()
     df = df[amount_valid]
-    logger.info(
-        "Rule 3 (non-negative amount) applied", rejected=rejections["negative_amount"]
-    )
+    logger.info("Rule 3 (non-negative amount) applied", rejected=rejections["negative_amount"])
 
     final_count = len(df)
     total_rejected = initial_count - final_count
@@ -218,9 +214,7 @@ class MonthlyLoader:
         curated_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(curated_path, engine="pyarrow", index=False)
         file_size_mb = curated_path.stat().st_size / (1024 * 1024)
-        logger.info(
-            "Written curated parquet", path=str(curated_path), size_mb=file_size_mb
-        )
+        logger.info("Written curated parquet", path=str(curated_path), size_mb=file_size_mb)
 
         # Calculate statistics
         retention_rate = (output_rows / input_rows * 100) if input_rows > 0 else 0

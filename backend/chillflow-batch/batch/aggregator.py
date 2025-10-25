@@ -49,7 +49,7 @@ class BatchAggregator:
             result = session.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     MIN(pickup_ts) as min_ts,
                     MAX(pickup_ts) as max_ts,
                     COUNT(*) as total_trips
@@ -132,9 +132,7 @@ class BatchAggregator:
         finally:
             session.close()
 
-    def aggregate_backfill(
-        self, start_date: datetime, end_date: datetime
-    ) -> Dict[str, int]:
+    def aggregate_backfill(self, start_date: datetime, end_date: datetime) -> Dict[str, int]:
         """
         Backfill aggregations for a specific date range.
 
@@ -198,10 +196,10 @@ class BatchAggregator:
             AVG(fare_amount) AS avg_fare,
             AVG(tip_amount) AS avg_tip,
             AVG(
-                CASE 
-                    WHEN EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) > 0 
+                CASE
+                    WHEN EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) > 0
                     THEN (trip_distance * 1.60934) / (EXTRACT(EPOCH FROM (dropoff_ts - pickup_ts)) / 3600)
-                    ELSE NULL 
+                    ELSE NULL
                 END
             ) AS avg_speed_kmh,
             AVG(trip_distance * 1.60934) AS avg_distance_km,
@@ -210,7 +208,7 @@ class BatchAggregator:
             COUNT(DISTINCT vehicle_id_h) AS unique_vehicles,
             NOW() AS created_at
         FROM stg.complete_trip
-        WHERE pickup_ts >= :start_ts 
+        WHERE pickup_ts >= :start_ts
           AND pickup_ts < :end_ts
           AND pu_zone_id IS NOT NULL
         GROUP BY pu_zone_id, DATE_TRUNC('hour', pickup_ts)
@@ -282,12 +280,12 @@ class BatchAggregator:
             # In a real implementation, you'd create a ZoneHourlyKPI model
             stmt = text(
                 """
-                INSERT INTO mart.zone_hourly_kpis 
-                (zone_id, hour_ts, trips, avg_fare, avg_tip, avg_speed_kmh, 
+                INSERT INTO mart.zone_hourly_kpis
+                (zone_id, hour_ts, trips, avg_fare, avg_tip, avg_speed_kmh,
                  avg_distance_km, avg_duration_min, pct_card, unique_vehicles, created_at)
                 VALUES (:zone_id, :hour_ts, :trips, :avg_fare, :avg_tip, :avg_speed_kmh,
                         :avg_distance_km, :avg_duration_min, :pct_card, :unique_vehicles, :created_at)
-                ON CONFLICT (zone_id, hour_ts) 
+                ON CONFLICT (zone_id, hour_ts)
                 DO UPDATE SET
                     trips = EXCLUDED.trips,
                     avg_fare = EXCLUDED.avg_fare,
@@ -355,7 +353,7 @@ class BatchAggregator:
             result = session.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     MIN(hour_ts) as min_hour,
                     MAX(hour_ts) as max_hour
                 FROM mart.zone_hourly_kpis

@@ -28,9 +28,7 @@ class TestBatchAggregator:
             lookback_hours = 12
 
             # Test parameter calculation
-            start_of_day = target_date.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
             expected_start = start_of_day - timedelta(hours=lookback_hours)
             expected_end = start_of_day + timedelta(days=1)
 
@@ -46,12 +44,8 @@ class TestBatchAggregator:
             end_date = datetime(2025, 1, 5, 9, 45)
 
             # Test parameter calculation
-            expected_start = start_date.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            expected_end = end_date.replace(
-                hour=23, minute=59, second=59, microsecond=999999
-            )
+            expected_start = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            expected_end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
             assert expected_start.hour == 0
             assert expected_end.hour == 23

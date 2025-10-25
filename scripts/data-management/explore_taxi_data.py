@@ -42,9 +42,7 @@ def load_data(date_str=None, base_path="data/raw/yellow"):
     """Load yellow taxi data for specified date."""
     if date_str:
         year, month = date_str.split("-")
-        file_path = (
-            Path(base_path) / year / month / f"yellow_tripdata_{year}-{month}.parquet"
-        )
+        file_path = Path(base_path) / year / month / f"yellow_tripdata_{year}-{month}.parquet"
     else:
         file_path = find_latest_file(base_path)
 
@@ -71,9 +69,7 @@ def basic_info(df):
 
     print(f"Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
     print(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-    print(
-        f"\nDate range: {df['tpep_pickup_datetime'].min()} to {df['tpep_pickup_datetime'].max()}"
-    )
+    print(f"\nDate range: {df['tpep_pickup_datetime'].min()} to {df['tpep_pickup_datetime'].max()}")
     print(
         f"Duration: {(df['tpep_pickup_datetime'].max() - df['tpep_pickup_datetime'].min()).days} days"
     )
@@ -86,9 +82,7 @@ def basic_info(df):
         dtype = str(df[col].dtype)  # Convert dtype to string
         null_count = df[col].isna().sum()
         null_pct = (null_count / len(df)) * 100
-        print(
-            f"  {i:2d}. {col:30s} ({dtype:10s}) - {null_count:7,} nulls ({null_pct:5.2f}%)"
-        )
+        print(f"  {i:2d}. {col:30s} ({dtype:10s}) - {null_count:7,} nulls ({null_pct:5.2f}%)")
 
 
 def temporal_analysis(df):
@@ -252,14 +246,10 @@ def passenger_analysis(df):
             if pd.notna(count) and count > 0:
                 pct = (trips / len(df)) * 100
                 bar_length = int(trips / passenger_counts.max() * 40)
-                print(
-                    f"  {int(count)} passenger(s) │{'█' * bar_length} {trips:,} ({pct:.1f}%)"
-                )
+                print(f"  {int(count)} passenger(s) │{'█' * bar_length} {trips:,} ({pct:.1f}%)")
 
         valid_passengers = df[df["passenger_count"] > 0]
-        print(
-            f"\n  Average passengers per trip: {valid_passengers['passenger_count'].mean():.2f}"
-        )
+        print(f"\n  Average passengers per trip: {valid_passengers['passenger_count'].mean():.2f}")
 
 
 def data_quality_check(df):
@@ -282,14 +272,10 @@ def data_quality_check(df):
             )
 
     # Check for duration issues
-    df["duration"] = (
-        df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]
-    ).dt.total_seconds()
+    df["duration"] = (df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]).dt.total_seconds()
     negative_duration = (df["duration"] < 0).sum()
     if negative_duration > 0:
-        issues.append(
-            f"❌ Negative duration (dropoff before pickup): {negative_duration:,}"
-        )
+        issues.append(f"❌ Negative duration (dropoff before pickup): {negative_duration:,}")
 
     zero_duration = (df["duration"] == 0).sum()
     if zero_duration > 0:
@@ -301,9 +287,7 @@ def data_quality_check(df):
     null_pickup = df["PULocationID"].isna().sum()
     null_dropoff = df["DOLocationID"].isna().sum()
     if null_pickup > 0:
-        issues.append(
-            f"⚠️  Null pickup locations: {null_pickup:,} ({null_pickup/len(df)*100:.2f}%)"
-        )
+        issues.append(f"⚠️  Null pickup locations: {null_pickup:,} ({null_pickup/len(df)*100:.2f}%)")
     if null_dropoff > 0:
         issues.append(
             f"⚠️  Null dropoff locations: {null_dropoff:,} ({null_dropoff/len(df)*100:.2f}%)"
@@ -338,9 +322,7 @@ Examples:
         """,
     )
     parser.add_argument("date", nargs="?", help="Date in YYYY-MM format (optional)")
-    parser.add_argument(
-        "--summary-only", action="store_true", help="Show only summary statistics"
-    )
+    parser.add_argument("--summary-only", action="store_true", help="Show only summary statistics")
 
     args = parser.parse_args()
 

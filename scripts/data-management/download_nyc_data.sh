@@ -1,10 +1,10 @@
 #!/bin/bash
 # Download NYC Yellow Taxi Trip Data
 # Also downloads data dictionary, zone lookup, and zone shapefiles
-# 
-# Usage: 
+#
+# Usage:
 #   ./download_nyc_data.sh [START_DATE] [END_DATE]
-#   
+#
 # Date format: YYYY-MM (e.g., 2024-10 for October 2024)
 #
 # Examples:
@@ -103,7 +103,7 @@ else
     curl -o "$ZONE_SHAPES" \
          "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip"
     echo "✓ Downloaded: $ZONE_SHAPES"
-    
+
     # Unzip the shapefile
     echo "📦 Extracting taxi zones shapefile..."
     unzip -o "$ZONE_SHAPES" -d "data/raw/zones/shapes/"
@@ -125,7 +125,7 @@ NOT_AVAILABLE=0
 # Function to check if URL is valid (returns 0 if valid, 1 if not)
 check_url() {
     local url=$1
-    
+
     # Use HEAD request to check if URL exists without downloading
     # -s: silent, -f: fail on HTTP errors, -I: HEAD request only, -L: follow redirects
     if curl -s -f -I -L "$url" >/dev/null 2>&1; then
@@ -139,16 +139,16 @@ check_url() {
 download_month() {
     local year=$1
     local month=$2
-    
+
     # Format month with leading zero
     MONTH_PADDED=$(printf "%02d" "$month")
-    
+
     # Construct filename and paths
     FILENAME="yellow_tripdata_${year}-${MONTH_PADDED}.parquet"
     OUTPUT_DIR="$OUTPUT_BASE/$year/$MONTH_PADDED"
     OUTPUT_FILE="$OUTPUT_DIR/$FILENAME"
     SOURCE_URL="$BASE_URL/$FILENAME"
-    
+
     # Check if file already exists
     if [ -f "$OUTPUT_FILE" ]; then
         echo "⏭️  $FILENAME already exists, skipping..."
@@ -156,22 +156,22 @@ download_month() {
     else
         # First, check if URL is valid
         echo "🔍 Checking $FILENAME..."
-        
+
         if ! check_url "$SOURCE_URL"; then
             echo "❌ URL not available: $FILENAME"
             NOT_AVAILABLE=$((NOT_AVAILABLE + 1))
             return
         fi
-        
+
         echo "📥 Downloading $FILENAME..."
         mkdir -p "$OUTPUT_DIR"
-        
+
         # Use -f flag to fail on HTTP errors, with || to handle 404s gracefully
         if curl -f -o "$OUTPUT_FILE" "$SOURCE_URL" 2>/dev/null; then
             # Verify the downloaded file is actually a parquet file, not an error response
             # Check for common error patterns (XML errors, HTML, or suspiciously small files)
             FILE_SIZE=$(stat -f%z "$OUTPUT_FILE" 2>/dev/null || stat -c%s "$OUTPUT_FILE" 2>/dev/null)
-            
+
             if [ "$FILE_SIZE" -lt 1000 ]; then
                 # File is suspiciously small, check if it's an error message
                 if grep -q -E "(<Error>|<html>|Access Denied)" "$OUTPUT_FILE" 2>/dev/null; then
@@ -204,15 +204,15 @@ current_month=$START_MONTH_NUM
 while true; do
     # Download the current month
     download_month "$current_year" "$current_month"
-    
+
     # Check if we've reached the end date
     if [ "$current_year" -eq "$END_YEAR" ] && [ "$current_month" -eq "$END_MONTH_NUM" ]; then
         break
     fi
-    
+
     # Increment to next month
     current_month=$((current_month + 1))
-    
+
     # Roll over to next year if needed
     if [ "$current_month" -gt 12 ]; then
         current_month=1
