@@ -35,7 +35,7 @@ jobs:
     - name: Install pre-commit only
       run: |
         # Install only pre-commit dependencies for faster quality checks
-        uv sync --extra pre-commit
+        uv sync --group dev
 
     - name: Code Quality Checks
       run: |
