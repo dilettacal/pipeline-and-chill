@@ -21,3 +21,4 @@ uv run pytest backend/chillflow-core/tests/ -v
 ```
 
 **Note:** The `--editable` flag is crucial for development! It installs the package in development mode, so changes to the code are immediately reflected without reinstalling.
+# Trigger CI
