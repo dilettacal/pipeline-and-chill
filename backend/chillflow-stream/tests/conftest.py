@@ -344,14 +344,22 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """
     Automatically skip integration tests if testcontainers not available.
+    But allow them to run in CI with Redpanda service.
     """
     skip_integration = pytest.mark.skip(
         reason="testcontainers not available or integration test requires Docker"
     )
 
+    # Check if we're in CI with Redpanda service
+    kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
+    is_ci_with_redpanda = kafka_bootstrap and kafka_bootstrap != "localhost:9092"
+
     for item in items:
-        # Skip integration tests if testcontainers not available
+        # Skip integration tests if testcontainers not available AND not in CI
         if "integration" in item.keywords:
+            if is_ci_with_redpanda:
+                # In CI with Redpanda service, allow tests to run
+                continue
             try:
                 import testcontainers
             except ImportError:
