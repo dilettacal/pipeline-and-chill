@@ -81,7 +81,8 @@ jobs:
     - name: Run Integration Tests (if Docker available)
       run: |
         echo "🐳 Running integration tests..."
-        uv run make test TYPE=stream-integration || echo "Stream integration tests skipped (Docker not available)"
+        echo "⚠️  Stream integration tests require Kafka - skipping in CI"
+        echo "✅ Running batch integration tests (PostgreSQL only)..."
         uv run make test TYPE=batch-integration || echo "Batch integration tests skipped (Docker not available)"
       continue-on-error: true
 
