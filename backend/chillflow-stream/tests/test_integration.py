@@ -4,12 +4,15 @@ import os
 from datetime import datetime
 from unittest.mock import Mock, patch
 
+import pytest
 from kafka import KafkaConsumer, KafkaProducer
+
 from stream.cli import main
 
 from ._kafka_helpers import ensure_topic
 
 
+@pytest.mark.integration
 class TestStreamCLIIntegration:
     """Test CLI integration for stream processing."""
 

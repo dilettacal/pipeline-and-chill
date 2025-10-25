@@ -3,10 +3,13 @@
 from datetime import datetime
 from unittest.mock import patch
 
+import pytest
+
 from stream.trip_assembler import TripAssembler
 from stream.trip_event_producer import TripEventProducer
 
 
+@pytest.mark.integration
 class TestStreamIntegration:
     """Test end-to-end stream processing integration."""
 
