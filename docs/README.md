@@ -1,6 +1,6 @@
 # ChillFlow Pipeline 🚀
 
-Chill and Learn with a cool event-driven data pipeline for batch and real-time analytics of NYC taxi data. Built with Python, Kafka, PostgreSQL, and cloud-native technologies.
+A modern, event-driven data processing system for real-time analytics of NYC taxi data. Built with Python, Kafka, PostgreSQL, and cloud-native technologies.
 
 ## 🏗️ Architecture Overview
 
@@ -23,12 +23,12 @@ graph TB
         PRODUCER["📡 Event Producer<br/>Trip → Events"]
         KAFKA[("⚡ Kafka<br/>Event Streaming")]
         ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
-        REDIS[("⚡ Redis<br/>State Management")]
     end
 
     %% Storage Layer
     subgraph "Storage Layer"
         POSTGRES[("🗄️ PostgreSQL<br/>Complete Trips")]
+        REDIS[("⚡ Redis<br/>Caching")]
     end
 
     %% Analytics Layer
@@ -37,12 +37,12 @@ graph TB
         REPORTS["📈 Reports<br/>Analytics & Insights"]
     end
 
-    %% Infrastructure (commented out)
-    %% subgraph "Infrastructure"
-    %%     DOCKER["🐳 Docker<br/>Containerization"]
-    %%     CI["🔄 GitHub Actions<br/>CI/CD Pipeline"]
-    %%     TERRAFORM["🏗️ Terraform<br/>Infrastructure as Code"]
-    %% end
+    %% Infrastructure
+    subgraph "Infrastructure"
+        DOCKER["🐳 Docker<br/>Containerization"]
+        CI["🔄 GitHub Actions<br/>CI/CD Pipeline"]
+        TERRAFORM["🏗️ Terraform<br/>Infrastructure as Code"]
+    end
 
     %% Data Flow
     NYC --> BATCH
@@ -54,32 +54,31 @@ graph TB
     NYC --> PRODUCER
     PRODUCER --> KAFKA
     KAFKA --> ASSEMBLER
-    ASSEMBLER <--> REDIS
     ASSEMBLER --> POSTGRES
 
     %% Analytics Path
     POSTGRES --> AGGREGATOR
     AGGREGATOR --> REPORTS
 
-    %% Infrastructure connections (commented out)
-    %% DOCKER -.-> BATCH
-    %% DOCKER -.-> PRODUCER
-    %% DOCKER -.-> ASSEMBLER
-    %% CI -.-> DOCKER
-    %% TERRAFORM -.-> DOCKER
+    %% Infrastructure connections
+    DOCKER -.-> BATCH
+    DOCKER -.-> PRODUCER
+    DOCKER -.-> ASSEMBLER
+    CI -.-> DOCKER
+    TERRAFORM -.-> DOCKER
 
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
     classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
     classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
     classDef analytics fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
-    %% classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+    classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
 
     class NYC,REF dataSource
-    class BATCH,CURATE,PRODUCER,ASSEMBLER,REDIS processing
-    class POSTGRES,KAFKA storage
+    class BATCH,CURATE,PRODUCER,ASSEMBLER processing
+    class POSTGRES,REDIS,KAFKA storage
     class AGGREGATOR,REPORTS analytics
-    %% class DOCKER,CI,TERRAFORM infrastructure
+    class DOCKER,CI,TERRAFORM infrastructure
 ```
 
 ## 🚀 Quick Start
@@ -99,13 +98,13 @@ cd pipeline-and-chill
 uv sync
 
 # Start infrastructure
-make env up
+make infrastructure-up
 
 # Run the complete pipeline
-make pipeline full
+make pipeline-full
 
 # Run tests
-make test all
+make test TYPE=all
 ```
 
 ## 🏗️ Technology Stack
@@ -376,96 +375,58 @@ pipeline-and-chill/
 
 ## 🚀 Available Commands
 
-### Environment Management
+### Development
 ```bash
-# Start infrastructure (PostgreSQL, Redis, Kafka)
-make env up
+# Start infrastructure
+make infrastructure-up
 
-# Check infrastructure status
-make env status
-
-# Stop infrastructure
-make env down
-
-# Clean up everything
-make env clean
-```
-
-### Pipeline Operations
-```bash
-# Show available pipeline types
-make pipeline
+# Run complete pipeline
+make pipeline-full
 
 # Run specific pipeline stages
-make pipeline ingestion    # Data ingestion
-make pipeline batch       # Batch processing
-make pipeline stream      # Streaming pipeline
-make pipeline analytics   # Analytics & reports
-make pipeline full        # Complete end-to-end
-
-# Use custom year/month
-YEAR=2025 MONTH=02 make pipeline batch
-```
-
-### Streaming Pipeline (2-Terminal Setup)
-```bash
-# Terminal 1: Start event producer
-make stream produce
-
-# Terminal 2: Start trip assembler
-make stream assemble
-
-# Or use automated streaming
-make pipeline stream
+make pipeline-batch
+make pipeline-stream
 ```
 
 ### Testing
 ```bash
-# Show available test types
-make test
-
 # Run all tests
-make test all
+make test TYPE=all
 
 # Run specific test suites
-make test unit           # Unit tests
-make test stream         # Stream service tests
-make test batch          # Batch service tests
-make test integration    # Integration tests
-make test infra          # Infrastructure tests
+make test TYPE=unit
+make test TYPE=stream
+make test TYPE=batch
+make test TYPE=integration
 ```
 
-### Quality & Linting
+### Quality
 ```bash
-# Show available lint operations
-make lint
-
 # Run pre-commit hooks
-make lint check
+make quality
 
-# Auto-fix issues
-make lint fix
+# Format code
+make format
 
-# Update pre-commit hooks
-make lint update
-```
-
-### Database Operations
-```bash
-# Clean database
-make db clean
-
-# Connect to PostgreSQL
-make db shell
+# Lint code
+make lint
 ```
 
 ## 📚 Documentation
 
-- [System Architecture](docs/architecture/system-overview.md)
-- [Data Flow](docs/architecture/data-flow.md)
-- [Testing Strategy](docs/architecture/testing-strategy.md)
-- [Quick Start Guide](docs/deployment/quick-start.md)
+- [System Architecture](architecture/system-overview.md)
+- [Data Flow](architecture/data-flow.md)
+- [Testing Strategy](architecture/testing-strategy.md)
+- [Deployment Guide](deployment/quick-start.md)
 
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `make test TYPE=all`
+5. Commit with conventional commits
+6. Push and create a Pull Request
 
 ## 📄 License
 

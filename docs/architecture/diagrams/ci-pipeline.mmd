@@ -1,0 +1,85 @@
+graph TB
+    %% Trigger
+    TRIGGER["🚀 Push/PR Trigger"]
+
+    %% Parallel Jobs
+    subgraph "Parallel Test Execution"
+        UNIT["🧪 Unit Tests<br/>Fast, Isolated"]
+        STREAM["⚡ Stream Tests<br/>Kafka Integration"]
+        BATCH["📊 Batch Tests<br/>PostgreSQL Integration"]
+        CONTRACT["📋 Contract Tests<br/>Schema Validation"]
+        SMOKE["💨 Smoke Tests<br/>CLI Validation"]
+        QUALITY["✅ Quality Checks<br/>Linting & Formatting"]
+    end
+
+    %% Integration Tests
+    subgraph "Integration Tests"
+        STREAM_INT["⚡ Stream Integration<br/>Testcontainers + Kafka"]
+        BATCH_INT["📊 Batch Integration<br/>Testcontainers + PostgreSQL"]
+    end
+
+    %% Infrastructure
+    subgraph "Infrastructure"
+        DOCKER["🐳 Docker<br/>Container Runtime"]
+        TESTCONTAINERS["🧪 Testcontainers<br/>Real Services"]
+        REDPANDA["⚡ Redpanda<br/>Kafka Alternative"]
+    end
+
+    %% Quality Gates
+    subgraph "Quality Gates"
+        PRECOMMIT["✅ pre-commit<br/>Code Quality"]
+        BLACK["🎨 Black<br/>Code Formatting"]
+        ISORT["📦 isort<br/>Import Sorting"]
+        FLAKE8["🔍 flake8<br/>Linting"]
+    end
+
+    %% Results
+    SUCCESS["✅ All Tests Pass"]
+    FAILURE["❌ Test Failure"]
+    DEPLOY["🚀 Ready for Deployment"]
+
+    %% Flow
+    TRIGGER --> UNIT
+    TRIGGER --> STREAM
+    TRIGGER --> BATCH
+    TRIGGER --> CONTRACT
+    TRIGGER --> SMOKE
+    TRIGGER --> QUALITY
+
+    UNIT --> STREAM_INT
+    STREAM --> STREAM_INT
+    BATCH --> BATCH_INT
+
+    STREAM_INT --> DOCKER
+    BATCH_INT --> DOCKER
+    DOCKER --> TESTCONTAINERS
+    TESTCONTAINERS --> REDPANDA
+
+    QUALITY --> PRECOMMIT
+    PRECOMMIT --> BLACK
+    PRECOMMIT --> ISORT
+    PRECOMMIT --> FLAKE8
+
+    STREAM_INT --> SUCCESS
+    BATCH_INT --> SUCCESS
+    CONTRACT --> SUCCESS
+    SMOKE --> SUCCESS
+    PRECOMMIT --> SUCCESS
+
+    SUCCESS --> DEPLOY
+    FAILURE --> TRIGGER
+
+    %% Styling
+    classDef trigger fill:#ffebee,stroke:#c62828,stroke-width:3px,color:#000
+    classDef test fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef integration fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef infrastructure fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef quality fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef result fill:#e0f2f1,stroke:#00695c,stroke-width:3px,color:#000
+
+    class TRIGGER trigger
+    class UNIT,STREAM,BATCH,CONTRACT,SMOKE test
+    class STREAM_INT,BATCH_INT integration
+    class DOCKER,TESTCONTAINERS,REDPANDA infrastructure
+    class QUALITY,PRECOMMIT,BLACK,ISORT,FLAKE8 quality
+    class SUCCESS,FAILURE,DEPLOY result

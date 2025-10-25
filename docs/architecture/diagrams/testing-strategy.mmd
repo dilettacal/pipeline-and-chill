@@ -1,0 +1,73 @@
+graph TB
+    %% Test Pyramid
+    subgraph "Test Pyramid"
+        UNIT["🧪 Unit Tests<br/>Fast, Isolated<br/>~100ms each"]
+        INTEGRATION["🔗 Integration Tests<br/>Real Services<br/>~5-10s each"]
+        E2E["🌐 End-to-End Tests<br/>Full Pipeline<br/>~30-60s each"]
+    end
+
+    %% Test Types
+    subgraph "Test Categories"
+        STREAM_TESTS["⚡ Stream Tests<br/>Kafka Integration"]
+        BATCH_TESTS["📊 Batch Tests<br/>PostgreSQL Integration"]
+        CONTRACT_TESTS["📋 Contract Tests<br/>Schema Validation"]
+        SMOKE_TESTS["💨 Smoke Tests<br/>CLI Validation"]
+        PERFORMANCE["⚡ Performance Tests<br/>Benchmarks"]
+    end
+
+    %% Test Infrastructure
+    subgraph "Test Infrastructure"
+        TESTCONTAINERS["🐳 Testcontainers<br/>Real Services"]
+        POSTGRES_TEST[("🗄️ PostgreSQL<br/>Test Database")]
+        KAFKA_TEST[("⚡ Kafka<br/>Test Broker")]
+        REDIS_TEST[("⚡ Redis<br/>Test Cache")]
+    end
+
+    %% Quality Gates
+    subgraph "Quality Gates"
+        PRECOMMIT["✅ pre-commit<br/>Code Quality"]
+        LINTING["🔍 Linting<br/>flake8, isort"]
+        FORMATTING["🎨 Formatting<br/>Black"]
+        TYPE_CHECK["📝 Type Checking<br/>mypy"]
+    end
+
+    %% CI/CD Integration
+    subgraph "CI/CD Integration"
+        GITHUB_ACTIONS["🔄 GitHub Actions<br/>Automated Testing"]
+        PARALLEL["⚡ Parallel Execution<br/>7 Test Jobs"]
+        MATRIX["📊 Matrix Strategy<br/>Efficient Resource Usage"]
+    end
+
+    %% Test Flow
+    UNIT --> INTEGRATION
+    INTEGRATION --> E2E
+
+    STREAM_TESTS --> TESTCONTAINERS
+    BATCH_TESTS --> TESTCONTAINERS
+    TESTCONTAINERS --> POSTGRES_TEST
+    TESTCONTAINERS --> KAFKA_TEST
+    TESTCONTAINERS --> REDIS_TEST
+
+    PRECOMMIT --> LINTING
+    PRECOMMIT --> FORMATTING
+    PRECOMMIT --> TYPE_CHECK
+
+    GITHUB_ACTIONS --> PARALLEL
+    PARALLEL --> MATRIX
+    MATRIX --> STREAM_TESTS
+    MATRIX --> BATCH_TESTS
+    MATRIX --> CONTRACT_TESTS
+    MATRIX --> SMOKE_TESTS
+
+    %% Styling
+    classDef pyramid fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef categories fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef infrastructure fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef quality fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef cicd fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+
+    class UNIT,INTEGRATION,E2E pyramid
+    class STREAM_TESTS,BATCH_TESTS,CONTRACT_TESTS,SMOKE_TESTS,PERFORMANCE categories
+    class TESTCONTAINERS,POSTGRES_TEST,KAFKA_TEST,REDIS_TEST infrastructure
+    class PRECOMMIT,LINTING,FORMATTING,TYPE_CHECK quality
+    class GITHUB_ACTIONS,PARALLEL,MATRIX cicd

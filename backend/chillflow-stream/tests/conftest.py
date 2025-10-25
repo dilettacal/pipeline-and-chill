@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import pytest
 from core import CompleteTrip
 from testcontainers.postgres import PostgresContainer
+from testcontainers.redis import RedisContainer
 
 
 def _wait_for_kafka(bootstrap: str, timeout=60):
@@ -65,13 +66,57 @@ def postgres_container():
         yield postgres
 
 
+@pytest.fixture(scope="session")
+def redis_container():
+    """
+    Provide a Redis container for state management tests.
+    """
+    with RedisContainer("redis:7-alpine") as redis:
+        yield redis
+
+
 @pytest.fixture
 def db_connection(postgres_container):
     """Database connection for integration tests."""
-    from sqlalchemy import create_engine
+    from core.clients.database import DatabaseClient
+    from sqlalchemy import create_engine, text
 
     connection_url = postgres_container.get_connection_url()
     engine = create_engine(connection_url)
+
+    # Create schemas first
+    with engine.connect() as conn:
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS dim"))
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS stg"))
+        conn.commit()
+
+    # Create database tables
+    db_client = DatabaseClient(connection_url)
+    db_client.create_tables()
+
+    # Seed zone data for foreign key constraints
+    with engine.connect() as conn:
+        # Insert some test zones
+        conn.execute(
+            text(
+                """
+            INSERT INTO dim.zone (zone_id, borough, zone_name, service_zone)
+            VALUES
+                (100, 'Manhattan', 'Test Zone 100', 'Yellow Zone'),
+                (101, 'Manhattan', 'Test Zone 101', 'Yellow Zone'),
+                (102, 'Manhattan', 'Test Zone 102', 'Yellow Zone'),
+                (103, 'Manhattan', 'Test Zone 103', 'Yellow Zone'),
+                (150, 'Manhattan', 'Test Zone 150', 'Yellow Zone'),
+                (200, 'Brooklyn', 'Test Zone 200', 'Yellow Zone'),
+                (201, 'Brooklyn', 'Test Zone 201', 'Yellow Zone'),
+                (202, 'Brooklyn', 'Test Zone 202', 'Yellow Zone'),
+                (203, 'Brooklyn', 'Test Zone 203', 'Yellow Zone'),
+                (250, 'Brooklyn', 'Test Zone 250', 'Yellow Zone')
+            ON CONFLICT (zone_id) DO NOTHING
+        """
+            )
+        )
+        conn.commit()
 
     yield engine
 
@@ -90,6 +135,12 @@ def db_session(db_connection):
 
     session.rollback()
     session.close()
+
+
+@pytest.fixture
+def redis_url(redis_container):
+    """Redis connection URL for tests."""
+    return f"redis://{redis_container.get_container_host_ip()}:{redis_container.get_exposed_port(6379)}/0"
 
 
 # =============================================================================

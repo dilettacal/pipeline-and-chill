@@ -74,13 +74,12 @@ class TestCLISmoke:
             producer = TripEventProducer()
             assert producer is not None
 
-        with (
-            patch("stream.trip_assembler.KafkaConsumer"),
-            patch("kafka.admin.KafkaAdminClient"),
-            patch("core.clients.database.get_database_client"),
-        ):
-            assembler = TripAssembler()
-            assert assembler is not None
+        # Test that the stub TripAssembler can be created
+        # (No need to patch since it's a stub implementation)
+        assembler = TripAssembler()
+        assert assembler is not None
+        assert assembler.topic == "trip-events"
+        assert assembler.group_id == "trip-assembler"
 
     def test_data_validation_smoke(self):
         """Test data validation and filtering."""

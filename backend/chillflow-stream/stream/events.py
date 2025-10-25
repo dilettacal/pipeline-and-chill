@@ -23,6 +23,20 @@ class EventType(str, Enum):
     ZONE_ENTERED = "zone_entered"
     ZONE_EXITED = "zone_exited"
 
+    def mask_bit(self) -> int:
+        """Get the bit position for this event type in a bitmask."""
+        # Map each event type to a unique bit position
+        bit_mapping = {
+            EventType.TRIP_STARTED: 0,
+            EventType.TRIP_ENDED: 1,
+            EventType.PASSENGER_PICKED_UP: 2,
+            EventType.PASSENGER_DROPPED_OFF: 3,
+            EventType.PAYMENT_PROCESSED: 4,
+            EventType.ZONE_ENTERED: 5,
+            EventType.ZONE_EXITED: 6,
+        }
+        return bit_mapping[self]
+
 
 class TripEvent(BaseModel):
     """Base event schema for all trip-related events."""

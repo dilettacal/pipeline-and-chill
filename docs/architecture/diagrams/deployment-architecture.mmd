@@ -1,0 +1,80 @@
+graph TB
+    %% Development Environment
+    subgraph "Development Environment"
+        LOCAL["💻 Local Development<br/>Docker Compose"]
+        MAKEFILE["🛠️ Makefile<br/>Development Commands"]
+        PRECOMMIT["✅ pre-commit<br/>Code Quality"]
+    end
+
+    %% CI/CD Pipeline
+    subgraph "CI/CD Pipeline"
+        GITHUB["🔄 GitHub Actions<br/>Automated Testing"]
+        PARALLEL["⚡ Parallel Jobs<br/>7 Test Suites"]
+        QUALITY["✅ Quality Gates<br/>Linting & Formatting"]
+    end
+
+    %% Infrastructure as Code
+    subgraph "Infrastructure as Code"
+        TERRAFORM["🏗️ Terraform<br/>Infrastructure"]
+        MODULES["📦 Terraform Modules<br/>Reusable Components"]
+        ENVIRONMENTS["🌍 Multi-Environment<br/>dev/staging/prod"]
+    end
+
+    %% Container Orchestration
+    subgraph "Container Orchestration"
+        DOCKER["🐳 Docker<br/>Containerization"]
+        K8S["☸️ Kubernetes<br/>Orchestration"]
+        HELM["⚓ Helm<br/>Package Management"]
+    end
+
+    %% Cloud Services
+    subgraph "Cloud Services"
+        AWS["☁️ AWS<br/>Cloud Platform"]
+        MSK["⚡ Amazon MSK<br/>Managed Kafka"]
+        RDS["🗄️ Amazon RDS<br/>Managed PostgreSQL"]
+        EKS["☸️ Amazon EKS<br/>Managed Kubernetes"]
+    end
+
+    %% Monitoring & Observability
+    subgraph "Monitoring & Observability"
+        PROMETHEUS["📊 Prometheus<br/>Metrics Collection"]
+        GRAFANA["📈 Grafana<br/>Dashboards"]
+        LOKI["📝 Loki<br/>Log Aggregation"]
+        ALERTS["🚨 Alerting<br/>Incident Response"]
+    end
+
+    %% Deployment Flow
+    LOCAL --> GITHUB
+    MAKEFILE --> LOCAL
+    PRECOMMIT --> GITHUB
+    GITHUB --> PARALLEL
+    PARALLEL --> QUALITY
+    QUALITY --> TERRAFORM
+    TERRAFORM --> MODULES
+    MODULES --> ENVIRONMENTS
+    ENVIRONMENTS --> DOCKER
+    DOCKER --> K8S
+    K8S --> HELM
+    HELM --> AWS
+    AWS --> MSK
+    AWS --> RDS
+    AWS --> EKS
+    EKS --> PROMETHEUS
+    PROMETHEUS --> GRAFANA
+    GRAFANA --> LOKI
+    LOKI --> ALERTS
+
+    %% Styling
+    classDef development fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef cicd fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef infrastructure fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef orchestration fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef cloud fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    classDef monitoring fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+
+    class LOCAL,MAKEFILE,PRECOMMIT development
+    class GITHUB,PARALLEL,QUALITY cicd
+    class TERRAFORM,MODULES,ENVIRONMENTS infrastructure
+    class DOCKER,K8S,HELM orchestration
+    class AWS,MSK,RDS,EKS cloud
+    class PROMETHEUS,GRAFANA,LOKI,ALERTS monitoring

@@ -1,0 +1,68 @@
+graph LR
+    %% Data Sources
+    subgraph "Data Sources"
+        RAW[("📁 Raw Data<br/>NYC Taxi Parquet")]
+        ZONES[("🗺️ Zone Data<br/>Taxi Zones CSV")]
+    end
+
+    %% Batch Processing
+    subgraph "Batch Processing"
+        LOADER["📥 Data Loader<br/>Monthly Processing"]
+        CURATOR["🔧 Data Curator<br/>Quality & Validation"]
+        PRODUCER["🏭 Batch Producer<br/>Trip Generation"]
+    end
+
+    %% Streaming Processing
+    subgraph "Streaming Processing"
+        EVENT_PROD["📡 Event Producer<br/>Trip → Events"]
+        KAFKA_STREAM[("⚡ Kafka Stream<br/>Event Bus")]
+        ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
+    end
+
+    %% Storage
+    subgraph "Storage Layer"
+        POSTGRES[("🗄️ PostgreSQL<br/>Complete Trips")]
+        REDIS_CACHE[("⚡ Redis<br/>State Management<br/>(Optional)")]
+    end
+
+    %% Analytics
+    subgraph "Analytics Layer"
+        AGGREGATOR["📊 KPI Aggregator<br/>Zone Hourly Stats"]
+        MART[("📈 Data Mart<br/>Analytics Tables")]
+        REPORTS["📊 Reports<br/>Business Insights"]
+    end
+
+    %% Batch Processing Path
+    RAW --> LOADER
+    ZONES --> LOADER
+    LOADER --> CURATOR
+    CURATOR --> PRODUCER
+    PRODUCER --> POSTGRES
+
+    %% Streaming Processing Path
+    RAW --> EVENT_PROD
+    EVENT_PROD --> KAFKA_STREAM
+    KAFKA_STREAM --> ASSEMBLER
+    ASSEMBLER --> POSTGRES
+
+    %% Analytics Path
+    POSTGRES --> AGGREGATOR
+    AGGREGATOR --> MART
+    MART --> REPORTS
+
+    %% State Management (Optional)
+    ASSEMBLER -.-> REDIS_CACHE
+    REDIS_CACHE -.-> ASSEMBLER
+
+    %% Styling
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
+    classDef batch fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef stream fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
+    classDef analytics fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+
+    class RAW,ZONES source
+    class LOADER,CURATOR,PRODUCER batch
+    class EVENT_PROD,KAFKA_STREAM,ASSEMBLER stream
+    class POSTGRES,REDIS_CACHE storage
+    class AGGREGATOR,MART,REPORTS analytics

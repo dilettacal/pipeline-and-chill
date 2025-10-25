@@ -1,0 +1,79 @@
+graph TB
+    %% Frontend/API Layer
+    subgraph "API Layer"
+        FASTAPI["⚡ FastAPI<br/>REST API"]
+        CLICK["🖱️ Click<br/>CLI Interface"]
+    end
+
+    %% Backend Services
+    subgraph "Backend Services"
+        PYTHON["🐍 Python 3.12<br/>Core Language"]
+        PYDANTIC["📋 Pydantic v2<br/>Data Validation"]
+        SQLALCHEMY["🗄️ SQLAlchemy<br/>ORM"]
+        ALEMBIC["🔄 Alembic<br/>DB Migrations"]
+    end
+
+    %% Streaming & Messaging
+    subgraph "Streaming & Messaging"
+        KAFKA["⚡ Apache Kafka<br/>Event Streaming"]
+        TESTCONTAINERS["🐳 Testcontainers<br/>Integration Testing"]
+        REDIS["⚡ Redis<br/>Caching & Sessions"]
+    end
+
+    %% Data & Storage
+    subgraph "Data & Storage"
+        POSTGRES["🐘 PostgreSQL<br/>Primary Database"]
+        PARQUET["📊 Parquet<br/>Data Files"]
+        PANDAS["🐼 Pandas<br/>Data Processing"]
+    end
+
+    %% DevOps & Infrastructure
+    subgraph "DevOps & Infrastructure"
+        DOCKER["🐳 Docker<br/>Containerization"]
+        GITHUB["🔄 GitHub Actions<br/>CI/CD"]
+        TERRAFORM["🏗️ Terraform<br/>Infrastructure"]
+        UV["⚡ uv<br/>Package Management"]
+    end
+
+    %% Testing & Quality
+    subgraph "Testing & Quality"
+        PYTEST["🧪 pytest<br/>Testing Framework"]
+        PRECOMMIT["✅ pre-commit<br/>Code Quality"]
+        BLACK["🎨 Black<br/>Code Formatting"]
+        FLAKE8["🔍 flake8<br/>Linting"]
+    end
+
+    %% Connections
+    PYTHON --> PYDANTIC
+    PYTHON --> SQLALCHEMY
+    PYTHON --> FASTAPI
+    PYTHON --> CLICK
+    SQLALCHEMY --> ALEMBIC
+    SQLALCHEMY --> POSTGRES
+    PYDANTIC --> KAFKA
+    KAFKA --> TESTCONTAINERS
+    PYTHON --> PANDAS
+    PANDAS --> PARQUET
+    PYTHON --> PYTEST
+    PYTEST --> TESTCONTAINERS
+    PYTHON --> PRECOMMIT
+    PRECOMMIT --> BLACK
+    PRECOMMIT --> FLAKE8
+    DOCKER --> GITHUB
+    TERRAFORM --> DOCKER
+    UV --> PYTHON
+
+    %% Styling
+    classDef language fill:#ffebee,stroke:#c62828,stroke-width:3px,color:#000
+    classDef framework fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef database fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef streaming fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef devops fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef testing fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+
+    class PYTHON language
+    class FASTAPI,CLICK,PYDANTIC,SQLALCHEMY,ALEMBIC,PANDAS framework
+    class POSTGRES,PARQUET,REDIS database
+    class KAFKA,TESTCONTAINERS streaming
+    class DOCKER,GITHUB,TERRAFORM,UV devops
+    class PYTEST,PRECOMMIT,BLACK,FLAKE8 testing

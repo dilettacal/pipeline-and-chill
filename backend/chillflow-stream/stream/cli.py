@@ -195,13 +195,24 @@ def consume_events(topic: str, timeout: int):
 @click.option("--timeout", type=int, default=30, help="Consumer timeout in seconds")
 @click.option("--max-events", type=int, help="Maximum number of events to process")
 @click.option("--save-db/--no-save-db", default=True, help="Save completed trips to database")
-def assemble_trips(topic: str, timeout: int, max_events: Optional[int], save_db: bool):
+@click.option("--use-redis/--no-redis", default=False, help="Use Redis for state management")
+@click.option("--redis-url", default="redis://localhost:6379/0", help="Redis connection URL")
+def assemble_trips(
+    topic: str,
+    timeout: int,
+    max_events: Optional[int],
+    save_db: bool,
+    use_redis: bool,
+    redis_url: str,
+):
     """Assemble events into complete trips."""
-    logger.info("Starting trip assembly", topic=topic, timeout=timeout, save_db=save_db)
+    logger.info(
+        "Starting trip assembly", topic=topic, timeout=timeout, save_db=save_db, use_redis=use_redis
+    )
 
     try:
-        # Initialize assembler
-        assembler = TripAssembler(topic=topic)
+        # Initialize assembler with Redis support
+        assembler = TripAssembler(topic=topic, use_redis=use_redis, redis_url=redis_url)
 
         try:
             # Run assembly loop
@@ -219,6 +230,10 @@ def assemble_trips(topic: str, timeout: int, max_events: Optional[int], save_db:
             )
 
             click.echo(f"✅ Assembled {stats['trips_assembled']} trips")
+            if use_redis:
+                click.echo(f"🔴 Using Redis state management")
+            else:
+                click.echo(f"💾 Using in-memory state management")
             if save_db:
                 click.echo(f"💾 Saved {stats['trips_saved']} trips to database")
                 if stats["trips_failed"] > 0:
@@ -264,6 +279,39 @@ def create_topic(topic: str):
         logger.error("Topic creation failed", error=str(e))
         click.echo(f"❌ Error: {e}")
         sys.exit(1)
+
+
+@main.command()
+@click.option("--topic", default="trip-events", help="Kafka topic name")
+@click.option("--max-events", type=int, help="Maximum number of events to process")
+@click.option("--redis-url", default="redis://localhost:6379/0", help="Redis connection URL")
+def ingest_events(
+    topic: str,
+    max_events: Optional[int],
+    redis_url: str,
+):
+    """Ingest events from Kafka to Redis (Expert Architecture)."""
+    logger.info("Starting event ingestion", topic=topic, max_events=max_events, redis_url=redis_url)
+
+    try:
+        from .event_ingestor import EventIngestor
+
+        # Initialize event ingestor
+        ingestor = EventIngestor(topic=topic, redis_url=redis_url)
+
+        click.echo(f"📡 Ingesting events from {topic} to Redis...")
+
+        # Process events
+        events_processed = ingestor.consume_events(max_events=max_events)
+
+        # Show results
+        click.echo(f"✅ Processed {events_processed} events")
+        click.echo(f"📊 Events stored in Redis")
+
+    except Exception as e:
+        logger.error("Event ingestion failed", error=str(e))
+        click.echo(f"❌ Error: {e}")
+        raise click.Abort()
 
 
 if __name__ == "__main__":
