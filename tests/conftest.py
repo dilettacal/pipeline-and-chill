@@ -36,3 +36,8 @@ def pytest_configure(config):
     )
     config.addinivalue_line("markers", "infrastructure: Infrastructure tests that require Docker")
     config.addinivalue_line("markers", "e2e: End-to-end tests that require full platform")
+    config.addinivalue_line(
+        "markers", "contract: Contract tests for data schemas and transformations"
+    )
+    config.addinivalue_line("markers", "smoke: Smoke tests for lightweight end-to-end validation")
+    config.addinivalue_line("markers", "performance: Performance tests and benchmarks")

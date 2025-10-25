@@ -73,7 +73,7 @@ status: ## Show infrastructure status
 	@echo "📊 Prometheus:"
 	@curl -s http://localhost:9090/-/healthy >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"
 
-test: ## Run tests (usage: make test TYPE=unit|infra|stream|stream-integration|batch|batch-integration|all)
+test: ## Run tests (usage: make test TYPE=unit|infra|stream|stream-integration|batch|batch-integration|contracts|smoke|performance|all)
 	@if [ "$(TYPE)" = "infra" ]; then \
 		echo "🧪 Running infrastructure tests..."; \
 		echo "⚠️  Make sure infrastructure is running: make up"; \
@@ -92,15 +92,28 @@ test: ## Run tests (usage: make test TYPE=unit|infra|stream|stream-integration|b
 		echo "🧪 Running batch service integration tests..."; \
 		echo "⚠️  This requires Docker and testcontainers"; \
 		cd $(PROJECT_ROOT)/backend/chillflow-batch && uv run pytest tests/test_simple_integration.py -m integration -v; \
+	elif [ "$(TYPE)" = "contracts" ]; then \
+		echo "🧪 Running contract tests..."; \
+		uv run pytest tests/contracts/ -m contract -v; \
+	elif [ "$(TYPE)" = "smoke" ]; then \
+		echo "🧪 Running smoke tests..."; \
+		uv run pytest tests/smoke/ -m smoke -v; \
+	elif [ "$(TYPE)" = "performance" ]; then \
+		echo "🧪 Running performance tests..."; \
+		uv run pytest tests/performance/ -m performance -v; \
 	elif [ "$(TYPE)" = "all" ]; then \
 		echo "🧪 Running all unit tests..."; \
-		uv run pytest tests/ -v; \
+		uv run pytest tests/unit/ -v; \
 		echo "🧪 Running stream service unit tests..."; \
 		cd $(PROJECT_ROOT)/backend/chillflow-stream && uv run pytest tests/ -m "not integration" -v; \
 		echo "🧪 Running batch service unit tests..."; \
 		cd $(PROJECT_ROOT)/backend/chillflow-batch && uv run pytest tests/ -m "not integration" -v; \
+		echo "🧪 Running contract tests..."; \
+		cd $(PROJECT_ROOT) && uv run pytest tests/contracts/ -m contract -v; \
+		echo "🧪 Running smoke tests..."; \
+		cd $(PROJECT_ROOT) && uv run pytest tests/smoke/ -m smoke -v; \
 	else \
-		echo "🧪 Running unit tests..."; \
+		echo "🧪 You have not specified a test type. Running unit tests..."; \
 		uv run pytest tests/unit/ -v; \
 	fi
 

@@ -860,10 +860,12 @@ dependencies = [
     { name = "chillflow-core" },
     { name = "chillflow-stream" },
     { name = "pandas" },
+    { name = "psycopg2-binary" },
     { name = "pyarrow" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "testcontainers" },
 ]
 
 [package.dev-dependencies]
@@ -877,10 +879,12 @@ requires-dist = [
     { name = "chillflow-core", editable = "backend/chillflow-core" },
     { name = "chillflow-stream", editable = "backend/chillflow-stream" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "psycopg2-binary", specifier = ">=2.9.0" },
     { name = "pyarrow", specifier = ">=22.0.0" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "testcontainers", specifier = ">=3.7.0" },
 ]
 
 [package.metadata.requires-dev]

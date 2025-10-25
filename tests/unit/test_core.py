@@ -57,11 +57,15 @@ class TestChillFlowCore:
     def test_trip_schema_validation(self):
         """Test Pydantic schema validation."""
         # Valid trip data
+        pickup_time = datetime.now()
+        dropoff_time = datetime.now().replace(
+            hour=pickup_time.hour + 1
+        )  # Ensure dropoff is after pickup
         trip_data = {
             "trip_key": "test_trip_123",
             "vendor_id": 1,
-            "pickup_ts": datetime.now(),
-            "dropoff_ts": datetime.now(),
+            "pickup_ts": pickup_time,
+            "dropoff_ts": dropoff_time,
             "pu_zone_id": 229,
             "do_zone_id": 230,
             "vehicle_id_h": "test_vehicle",
