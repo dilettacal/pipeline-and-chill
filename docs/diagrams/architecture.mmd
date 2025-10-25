@@ -1,0 +1,77 @@
+graph LR
+    %% Data Sources
+    subgraph "Data Sources"
+        NYC(("🗽 NYC Taxi Data<br/>Parquet Files"))
+        REF(("📋 Reference Data<br/>Zones, Lookups"))
+    end
+
+    %% Ingestion Layer
+    subgraph "Ingestion Layer"
+        BATCH["📥 Batch Processor<br/>Monthly Data Loading"]
+        CURATE["🔧 Data Curation<br/>Quality Checks"]
+    end
+
+    %% Streaming Layer
+    subgraph "Streaming Layer"
+        PRODUCER["📡 Event Producer<br/>Trip → Events"]
+        KAFKA(("⚡ Kafka<br/>Event Streaming"))
+        ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
+        REDIS(("⚡ Redis<br/>State Management"))
+    end
+
+    %% Storage Layer
+    subgraph "Storage Layer"
+        POSTGRES(("🗄️ PostgreSQL<br/>Complete Trips"))
+    end
+
+    %% Analytics Layer
+    subgraph "Analytics Layer"
+        AGGREGATOR["📊 KPI Aggregator<br/>Zone Hourly Stats"]
+        REPORTS["📈 Reports<br/>Analytics & Insights"]
+    end
+
+    %% Data Flow (Batch)
+    NYC -- raw parquet --> BATCH
+    REF -- lookups --> BATCH
+    BATCH -- curated parquet --> CURATE
+    CURATE -- inserts --> POSTGRES
+
+    %% Streaming Path (Events)
+    NYC -- raw events --> PRODUCER
+    PRODUCER -- trip events --> KAFKA
+    KAFKA -- assembled trips --> ASSEMBLER
+    ASSEMBLER <--> REDIS
+    ASSEMBLER -- upserts --> POSTGRES
+
+    %% Analytics Path
+    POSTGRES --> AGGREGATOR
+    AGGREGATOR --> REPORTS
+
+    %% Styling
+    classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
+    classDef analytics fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef k8s stroke:#2962ff,stroke-width:3px,stroke-dasharray: 5 3
+
+    class NYC,REF dataSource
+    class BATCH,CURATE,PRODUCER,ASSEMBLER,REDIS processing
+    class POSTGRES storage
+    class KAFKA processing
+    class AGGREGATOR,REPORTS analytics
+
+    %% Kubernetes (containerized workloads)
+    class BATCH,CURATE,PRODUCER,ASSEMBLER,AGGREGATOR k8s
+    class KAFKA,POSTGRES,REDIS k8s
+
+    %% Legend
+    subgraph "Legend"
+        L_DS["Data Source"]:::dataSource
+        L_PROC["Processing Service"]:::processing
+        L_STORE["Storage"]:::storage
+        L_ANALYTICS["Analytics"]:::analytics
+        L_K8S["Kubernetes-managed (dashed blue border)"]:::processing
+        L_KAFKA(("Kafka (event bus)"))
+    end
+    class L_K8S k8s
+    class L_KAFKA k8s

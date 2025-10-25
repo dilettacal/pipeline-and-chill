@@ -2,10 +2,19 @@
 
 Chill and Learn with a cool event-driven data pipeline for batch and real-time analytics of NYC taxi data. Built with Python, Kafka, PostgreSQL, and cloud-native technologies.
 
+## ✨ Key Features
+- 🧩 Unified batch + streaming pipeline
+- 🧠 Modular Python micro-packages
+- 🧪 Tested (unit, integration, smoke)
+- ☁️ Deployable locally (or to Azure/AWS with Terraform)
+- 📊 Built-in KPI aggregation and analytics layer
+
+
 ## 🏗️ Architecture Overview
 
+<!-- Source diagram: docs/diagrams/architecture.mmd -->
 ```mermaid
-graph TB
+graph LR
     %% Data Sources
     subgraph "Data Sources"
         NYC[("🗽 NYC Taxi Data<br/>Parquet Files")]
@@ -21,7 +30,7 @@ graph TB
     %% Streaming Layer
     subgraph "Streaming Layer"
         PRODUCER["📡 Event Producer<br/>Trip → Events"]
-        KAFKA[("⚡ Kafka<br/>Event Streaming")]
+        KAFKA(("⚡ Kafka<br/>Event Streaming"))
         ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
         REDIS[("⚡ Redis<br/>State Management")]
     end
@@ -44,18 +53,18 @@ graph TB
     %%     TERRAFORM["🏗️ Terraform<br/>Infrastructure as Code"]
     %% end
 
-    %% Data Flow
-    NYC --> BATCH
-    REF --> BATCH
-    BATCH --> CURATE
-    CURATE --> POSTGRES
+    %% Data Flow (Batch)
+    NYC -- raw parquet --> BATCH
+    REF -- lookups --> BATCH
+    BATCH -- curated parquet --> CURATE
+    CURATE -- inserts --> POSTGRES
 
-    %% Streaming Path
-    NYC --> PRODUCER
-    PRODUCER --> KAFKA
-    KAFKA --> ASSEMBLER
+    %% Streaming Path (Events)
+    NYC -- raw events --> PRODUCER
+    PRODUCER -- trip events --> KAFKA
+    KAFKA -- assembled trips --> ASSEMBLER
     ASSEMBLER <--> REDIS
-    ASSEMBLER --> POSTGRES
+    ASSEMBLER -- upserts --> POSTGRES
 
     %% Analytics Path
     POSTGRES --> AGGREGATOR
@@ -73,12 +82,29 @@ graph TB
     classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
     classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
     classDef analytics fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef k8s stroke:#2962ff,stroke-width:3px,stroke-dasharray: 5 3
     %% classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
 
     class NYC,REF dataSource
     class BATCH,CURATE,PRODUCER,ASSEMBLER,REDIS processing
     class POSTGRES,KAFKA storage
     class AGGREGATOR,REPORTS analytics
+
+    %% Kubernetes (containerized workloads)
+    class BATCH,CURATE,PRODUCER,ASSEMBLER,AGGREGATOR k8s
+    class KAFKA,POSTGRES,REDIS k8s
+
+    %% Legend
+    subgraph "Legend"
+        L_DS["Data Source"]:::dataSource
+        L_PROC["Processing Service"]:::processing
+        L_STORE["Storage"]:::storage
+        L_ANALYTICS["Analytics"]:::analytics
+        L_K8S["Kubernetes-managed (dashed blue border)"]:::processing
+        L_KAFKA(("Kafka (event bus)"))
+    end
+    class L_K8S k8s
+    class L_KAFKA k8s
     %% class DOCKER,CI,TERRAFORM infrastructure
 ```
 
@@ -459,6 +485,118 @@ make db clean
 make db shell
 ```
 
+#### Queries
+
+```sql
+-- Check for duplicate trip_key (should be 0 due to PK)
+SELECT trip_key, COUNT(*) AS cnt
+FROM stg.complete_trip
+GROUP BY trip_key
+HAVING COUNT(*) > 1
+ORDER BY cnt DESC
+LIMIT 20;
+```
+
+```sql
+-- Validate NOT NULL columns for unexpected NULLs
+SELECT
+  SUM(CASE WHEN trip_key IS NULL THEN 1 ELSE 0 END) AS null_trip_key,
+  SUM(CASE WHEN vendor_id IS NULL THEN 1 ELSE 0 END) AS null_vendor_id,
+  SUM(CASE WHEN pickup_ts IS NULL THEN 1 ELSE 0 END) AS null_pickup_ts,
+  SUM(CASE WHEN dropoff_ts IS NULL THEN 1 ELSE 0 END) AS null_dropoff_ts,
+  SUM(CASE WHEN pu_zone_id IS NULL THEN 1 ELSE 0 END) AS null_pu_zone_id,
+  SUM(CASE WHEN do_zone_id IS NULL THEN 1 ELSE 0 END) AS null_do_zone_id,
+  SUM(CASE WHEN vehicle_id_h IS NULL THEN 1 ELSE 0 END) AS null_vehicle_id_h
+FROM stg.complete_trip;
+```
+
+```sql
+-- Spot potential duplicate-generation sources
+SELECT vendor_id, pickup_ts, pu_zone_id, COUNT(*) AS cnt
+FROM stg.complete_trip
+GROUP BY vendor_id, pickup_ts, pu_zone_id
+HAVING COUNT(*) > 1
+ORDER BY cnt DESC
+LIMIT 20;
+```
+
+```sql
+-- Sample a specific trip_key (replace value)
+SELECT *
+FROM stg.complete_trip
+WHERE trip_key = 'REPLACE_WITH_TRIP_KEY';
+```
+
+```sql
+-- Validate foreign key references to zones
+SELECT COUNT(*) AS invalid_pu_zone_refs
+FROM stg.complete_trip t
+LEFT JOIN dim.zone z ON t.pu_zone_id = z.zone_id
+WHERE z.zone_id IS NULL;
+
+SELECT COUNT(*) AS invalid_do_zone_refs
+FROM stg.complete_trip t
+LEFT JOIN dim.zone z ON t.do_zone_id = z.zone_id
+WHERE z.zone_id IS NULL;
+```
+
+```sql
+-- Check presence of audit/model columns
+SELECT column_name
+FROM information_schema.columns
+WHERE table_schema = 'stg' AND table_name = 'complete_trip'
+  AND column_name IN ('last_update_ts', 'source', 'created_at', 'updated_at')
+ORDER BY column_name;
+```
+
+```sql
+-- Throughput by hour
+SELECT DATE_TRUNC('hour', pickup_ts) AS hour_bucket, COUNT(*) AS trips
+FROM stg.complete_trip
+GROUP BY 1
+ORDER BY 1 DESC
+LIMIT 48;
+```
+
+```sql
+-- Payment-type distribution and card share
+SELECT payment_type, COUNT(*) AS cnt
+FROM stg.complete_trip
+GROUP BY payment_type
+ORDER BY cnt DESC;
+
+SELECT
+  100.0 * SUM(CASE WHEN payment_type = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) AS pct_card
+FROM stg.complete_trip;
+```
+
+```sql
+-- Upsert smoke test (safe in a transaction)
+BEGIN;
+INSERT INTO stg.complete_trip (
+  trip_key, vendor_id, pickup_ts, dropoff_ts, pu_zone_id, do_zone_id, vehicle_id_h, source, last_update_ts
+) VALUES (
+  'TEST_TRIP_KEY', 1, NOW(), NOW() + INTERVAL '10 min', 229, 230, 'veh_test', 'manual', NOW()
+)
+ON CONFLICT (trip_key) DO UPDATE SET
+  vendor_id = EXCLUDED.vendor_id,
+  pickup_ts = EXCLUDED.pickup_ts,
+  dropoff_ts = EXCLUDED.dropoff_ts,
+  pu_zone_id = EXCLUDED.pu_zone_id,
+  do_zone_id = EXCLUDED.do_zone_id,
+  vehicle_id_h = EXCLUDED.vehicle_id_h,
+  source = EXCLUDED.source,
+  last_update_ts = NOW();
+
+SELECT * FROM stg.complete_trip WHERE trip_key = 'TEST_TRIP_KEY';
+ROLLBACK;
+```
+
+```sql
+-- Verify current transaction/session state
+SELECT txid_current(), NOW();
+```
+
 ## 📚 Documentation
 
 - [System Architecture](docs/architecture/system-overview.md)
@@ -469,4 +607,7 @@ make db shell
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+
+## Attribution
+This project uses public NYC Yellow Taxi Trip Data made available by the NYC Taxi and Limousine Commission via [NYC Open Data](https://data.cityofnewyork.us/Transportation/Yellow-Taxi-Trip-Records/).

@@ -24,7 +24,7 @@ graph LR
     %% Streaming Processing
     subgraph "Streaming Processing"
         EVENT_PROD["📡 Event Producer<br/>Trip → Events"]
-        KAFKA_STREAM[("⚡ Kafka Stream<br/>Event Bus")]
+        KAFKA_STREAM(("⚡ Kafka Stream<br/>Event Bus"))
         ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
     end
 
@@ -41,27 +41,27 @@ graph LR
         REPORTS["📊 Reports<br/>Business Insights"]
     end
 
-    %% Batch Processing Path
-    RAW --> LOADER
-    ZONES --> LOADER
-    LOADER --> CURATOR
-    CURATOR --> PRODUCER
-    PRODUCER --> POSTGRES
+    %% Batch Processing Path (files → curated → db)
+    RAW -- raw parquet --> LOADER
+    ZONES -- lookups --> LOADER
+    LOADER -- curated parquet --> CURATOR
+    CURATOR -- inserts --> PRODUCER
+    PRODUCER -- inserts --> POSTGRES
 
-    %% Streaming Processing Path
-    POSTGRES --> EVENT_PROD
-    EVENT_PROD --> KAFKA_STREAM
-    KAFKA_STREAM --> ASSEMBLER
-    ASSEMBLER --> POSTGRES
+    %% Streaming Processing Path (events)
+    RAW -- raw events --> EVENT_PROD
+    EVENT_PROD -- trip events --> KAFKA_STREAM
+    KAFKA_STREAM -- assembled trips --> ASSEMBLER
+    ASSEMBLER <--> REDIS_CACHE
+    ASSEMBLER -- upserts --> POSTGRES
 
     %% Analytics Path
     POSTGRES --> AGGREGATOR
     AGGREGATOR --> MART
     MART --> REPORTS
 
-    %% Caching
-    POSTGRES -.-> REDIS_CACHE
-    REDIS_CACHE -.-> AGGREGATOR
+    %% Caching (used by streaming assembly)
+    %% ASSEMBLER <--> REDIS_CACHE defined above
 
     %% Styling
     classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
@@ -69,12 +69,30 @@ graph LR
     classDef stream fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
     classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
     classDef analytics fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+    classDef k8s stroke:#2962ff,stroke-width:3px,stroke-dasharray: 5 3
 
     class RAW,ZONES source
     class LOADER,CURATOR,PRODUCER batch
     class EVENT_PROD,KAFKA_STREAM,ASSEMBLER stream
     class POSTGRES,REDIS_CACHE storage
     class AGGREGATOR,MART,REPORTS analytics
+
+    %% Kubernetes (containerized workloads)
+    class LOADER,CURATOR,PRODUCER,EVENT_PROD,ASSEMBLER,AGGREGATOR k8s
+    class KAFKA_STREAM,POSTGRES,REDIS_CACHE k8s
+
+    %% Legend
+    subgraph "Legend"
+        L_SRC["Data Source"]:::source
+        L_BATCH["Batch Service"]:::batch
+        L_STREAM["Streaming Service"]:::stream
+        L_STORE["Storage"]:::storage
+        L_ANALYTICS["Analytics"]:::analytics
+        L_K8S["Kubernetes-managed (dashed blue border)"]:::batch
+        L_KAFKA(("Kafka (event bus)"))
+    end
+    class L_K8S k8s
+    class L_KAFKA k8s
 ```
 
 ## 🏗️ Processing Stages

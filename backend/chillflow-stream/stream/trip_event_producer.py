@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 from core import CompleteTrip
 from core import get_logger as get_core_logger
+from core.metrics import MetricsCollector, ProcessingTimer
 from kafka import KafkaProducer
 
 from .events import (
@@ -47,6 +48,7 @@ class TripEventProducer:
             value_serializer=lambda v: v.model_dump_json().encode("utf-8"),
             key_serializer=lambda k: k.encode("utf-8") if k else None,
         )
+        self.metrics = MetricsCollector("trip-event-producer")
         logger.info("Trip event producer initialized", servers=kafka_bootstrap_servers)
 
     def process_trip(
@@ -131,6 +133,10 @@ class TripEventProducer:
         )
         events.append(payment_processed)
 
+        # Record metrics
+        for event in events:
+            self.metrics.record_trip_event(event.event_type.value)
+
         logger.info(
             "Generated events for trip",
             trip_key=trip.trip_key,
@@ -154,25 +160,31 @@ class TripEventProducer:
         sent_count = 0
         failed_count = 0
 
-        for event in events:
-            try:
-                # Use trip_key as partition key for ordering
-                future = self.kafka_producer.send(
-                    topic,
-                    key=event.trip_key,
-                    value=event,
-                )
-                future.get(timeout=10)  # Wait for confirmation
-                sent_count += 1
+        with ProcessingTimer(self.metrics, "send_events"):
+            for event in events:
+                try:
+                    # Use trip_key as partition key for ordering
+                    future = self.kafka_producer.send(
+                        topic,
+                        key=event.trip_key,
+                        value=event,
+                    )
+                    future.get(timeout=10)  # Wait for confirmation
+                    sent_count += 1
 
-            except Exception as e:
-                logger.error(
-                    "Failed to send event",
-                    event_id=event.event_id,
-                    trip_key=event.trip_key,
-                    error=str(e),
-                )
-                failed_count += 1
+                except Exception as e:
+                    logger.error(
+                        "Failed to send event",
+                        event_id=event.event_id,
+                        trip_key=event.trip_key,
+                        error=str(e),
+                    )
+                    failed_count += 1
+
+        # Record metrics
+        self.metrics.record_batch_size(len(events))
+        if failed_count > 0:
+            self.metrics.record_trip_failed("kafka_send_error")
 
         logger.info(
             "Events sent to Kafka",
@@ -284,6 +296,53 @@ class TripEventProducer:
             "sent": total_sent,
             "failed": total_failed,
         }
+
+    def send_events(self, events: List[TripEvent], topic: str = "trip-events") -> Dict[str, int]:
+        """
+        Send events to Kafka.
+
+        Args:
+            events: List of events to send
+            topic: Kafka topic name
+
+        Returns:
+            Dict with sending statistics
+        """
+        sent_count = 0
+        failed_count = 0
+
+        with ProcessingTimer(self.metrics, "send_events"):
+            for event in events:
+                try:
+                    # Record metrics for each event
+                    self.metrics.record_trip_event(event.event_type.value)
+
+                    # Send to Kafka
+                    future = self.kafka_producer.send(topic, value=event, key=event.trip_key)
+                    future.get(timeout=10)  # Wait for confirmation
+                    sent_count += 1
+                except Exception as e:
+                    logger.error(
+                        "Failed to send event",
+                        event_id=event.event_id,
+                        trip_key=event.trip_key,
+                        error=str(e),
+                    )
+                    failed_count += 1
+
+        # Record batch metrics
+        self.metrics.record_batch_size(len(events))
+        if failed_count > 0:
+            self.metrics.record_trip_failed("kafka_send_error")
+
+        logger.info(
+            "Events sent to Kafka",
+            topic=topic,
+            sent=sent_count,
+            failed=failed_count,
+            total=len(events),
+        )
+        return {"sent": sent_count, "failed": failed_count}
 
     def _calculate_duration_minutes(self, trip: CompleteTrip) -> Optional[float]:
         """Calculate trip duration in minutes."""

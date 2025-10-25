@@ -124,7 +124,6 @@ class TestTripAssemblerProcessor:
     def test_process_complete_trip(self):
         """Test TripAssemblerProcessor handles complete trips."""
         from core import CompleteTrip
-
         from stream.completion_policy import CompletionPolicy
         from stream.trip_assembler_processor import TripAssemblerProcessor
         from stream.trip_builder import TripBuilder

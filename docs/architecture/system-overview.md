@@ -6,8 +6,9 @@ The ChillFlow pipeline is a modern, event-driven data processing system designed
 
 ## 📊 System Architecture
 
+<!-- Source diagram: docs/diagrams/architecture.mmd -->
 ```mermaid
-graph TB
+graph LR
     %% Data Sources
     subgraph "Data Sources"
         NYC[("🗽 NYC Taxi Data<br/>Parquet Files")]
@@ -23,7 +24,7 @@ graph TB
     %% Streaming Layer
     subgraph "Streaming Layer"
         PRODUCER["📡 Event Producer<br/>Trip → Events"]
-        KAFKA[("⚡ Kafka<br/>Event Streaming")]
+        KAFKA(("⚡ Kafka<br/>Event Streaming"))
         ASSEMBLER["🔧 Trip Assembler<br/>Events → Trips"]
         REDIS[("⚡ Redis<br/>State Management")]
     end
@@ -46,18 +47,18 @@ graph TB
     %%     TERRAFORM["🏗️ Terraform<br/>Infrastructure as Code"]
     %% end
 
-    %% Data Flow
-    NYC --> BATCH
-    REF --> BATCH
-    BATCH --> CURATE
-    CURATE --> POSTGRES
+    %% Data Flow (Batch)
+    NYC -- raw parquet --> BATCH
+    REF -- lookups --> BATCH
+    BATCH -- curated parquet --> CURATE
+    CURATE -- inserts --> POSTGRES
 
-    %% Streaming Path
-    NYC --> PRODUCER
-    PRODUCER --> KAFKA
-    KAFKA --> ASSEMBLER
+    %% Streaming Path (Events)
+    NYC -- raw events --> PRODUCER
+    PRODUCER -- trip events --> KAFKA
+    KAFKA -- assembled trips --> ASSEMBLER
     ASSEMBLER <--> REDIS
-    ASSEMBLER --> POSTGRES
+    ASSEMBLER -- upserts --> POSTGRES
 
     %% Analytics Path
     POSTGRES --> AGGREGATOR
@@ -75,12 +76,30 @@ graph TB
     classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
     classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
     classDef analytics fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef k8s stroke:#2962ff,stroke-width:3px,stroke-dasharray: 5 3
     %% classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
 
     class NYC,REF dataSource
     class BATCH,CURATE,PRODUCER,ASSEMBLER,REDIS processing
-    class POSTGRES,KAFKA storage
+    class POSTGRES storage
+    class KAFKA processing
     class AGGREGATOR,REPORTS analytics
+
+    %% Kubernetes (containerized workloads)
+    class BATCH,CURATE,PRODUCER,ASSEMBLER,AGGREGATOR k8s
+    class KAFKA,POSTGRES,REDIS k8s
+
+    %% Legend
+    subgraph "Legend"
+        L_DS["Data Source"]:::dataSource
+        L_PROC["Processing Service"]:::processing
+        L_STORE["Storage"]:::storage
+        L_ANALYTICS["Analytics"]:::analytics
+        L_K8S["Kubernetes-managed (dashed blue border)"]:::processing
+        L_KAFKA(("Kafka (event bus)"))
+    end
+    class L_K8S k8s
+    class L_KAFKA k8s
     %% class DOCKER,CI,TERRAFORM infrastructure
 ```
 

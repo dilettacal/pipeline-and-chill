@@ -17,11 +17,12 @@ graph TB
 
     %% Test Types
     subgraph "Test Categories"
-        STREAM_TESTS["⚡ Stream Tests<br/>Kafka Integration"]
-        BATCH_TESTS["📊 Batch Tests<br/>PostgreSQL Integration"]
+        STREAM_TESTS["⚡ Stream Tests<br/>Kafka Integration (stream svc)"]
+        BATCH_TESTS["📊 Batch Tests<br/>PostgreSQL Integration (batch svc)"]
         CONTRACT_TESTS["📋 Contract Tests<br/>Schema Validation"]
         SMOKE_TESTS["💨 Smoke Tests<br/>CLI Validation"]
         PERFORMANCE["⚡ Performance Tests<br/>Benchmarks"]
+        INFRA_TESTS["🧱 Infrastructure Tests<br/>Platform/compose checks"]
     end
 
     %% Test Infrastructure
@@ -76,7 +77,7 @@ graph TB
     classDef cicd fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
 
     class UNIT,INTEGRATION,E2E pyramid
-    class STREAM_TESTS,BATCH_TESTS,CONTRACT_TESTS,SMOKE_TESTS,PERFORMANCE categories
+    class STREAM_TESTS,BATCH_TESTS,CONTRACT_TESTS,SMOKE_TESTS,PERFORMANCE,INFRA_TESTS categories
     class TESTCONTAINERS,POSTGRES_TEST,KAFKA_TEST,REDIS_TEST infrastructure
     class PRECOMMIT,LINTING,FORMATTING,TYPE_CHECK quality
     class GITHUB_ACTIONS,PARALLEL,MATRIX cicd
@@ -133,7 +134,7 @@ graph TB
 ## 🚀 CI/CD Integration
 
 ### **Parallel Test Execution**
-- **Matrix Strategy**: 7 parallel test jobs
+- **Matrix Strategy**: parallelized suites
 - **Resource Efficiency**: Optimal resource utilization
 - **Fast Feedback**: Quick test results
 - **Failure Isolation**: Independent test failures
@@ -158,27 +159,50 @@ graph TB
 - **Smoke Tests**: <1s each
 - **Total Suite**: <5 minutes
 
-## 🔄 Test Execution
+## 🔄 Test Execution & Layout
 
-### **Local Development**
+### Repository layout (where tests live)
+- Root tests:
+  - `tests/unit/` — core unit tests
+  - `tests/contracts/` — schema/contract tests
+  - `tests/smoke/` — CLI smoke tests
+  - `tests/performance/` — basic benchmarks
+  - `tests/infrastructure/` — platform/compose checks
+  - `tests/e2e/` — end-to-end orchestrations (if present)
+- Service tests:
+  - `backend/chillflow-batch/tests/` — batch unit/integration
+  - `backend/chillflow-core/tests/` — core library tests
+  - `backend/chillflow-stream/tests/unit/` — streaming unit tests
+  - `backend/chillflow-stream/tests/integration/` — streaming integration
+
+### Local development commands
 ```bash
-# Run all tests
-make test TYPE=all
+# All tests
+pytest -q
 
-# Run specific test suites
-make test TYPE=unit
-make test TYPE=stream
-make test TYPE=batch
-make test TYPE=integration
+# Root-level suites
+pytest tests/unit -q
+pytest tests/contracts -q
+pytest tests/smoke -q
+pytest tests/performance -q
+pytest tests/infrastructure -q
+
+# Service-specific
+pytest backend/chillflow-batch/tests -q
+pytest backend/chillflow-core/tests -q
+pytest backend/chillflow-stream/tests/unit -q
+pytest backend/chillflow-stream/tests/integration -q
 ```
 
-### **CI/CD Pipeline**
+### **CI/CD Pipeline (example split)**
 ```bash
-# Parallel execution
-pytest tests/unit/ -m "not integration"
-pytest tests/stream/ -m "not integration"
-pytest tests/batch/ -m "not integration"
-pytest tests/ -m "integration"
+# Split by area (examples)
+pytest tests/unit/ tests/contracts/ -q
+pytest tests/smoke/ tests/infrastructure/ -q
+pytest backend/chillflow-core/tests -q
+pytest backend/chillflow-batch/tests -q
+pytest backend/chillflow-stream/tests/unit -q
+pytest backend/chillflow-stream/tests/integration -q
 ```
 
 ## 🛠️ Test Tools
