@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  # Code quality checks (runs first)
+  # Code quality checks (runs first, minimal setup)
   quality:
     runs-on: ubuntu-latest
     steps:
@@ -32,9 +32,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-uv-
 
-    - name: Install dependencies
+    - name: Install pre-commit only
       run: |
-        uv sync --all-extras
+        # Install only pre-commit dependencies for faster quality checks
+        uv sync --extra pre-commit
 
     - name: Code Quality Checks
       run: |
