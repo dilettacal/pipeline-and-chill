@@ -5,6 +5,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from kafka import KafkaConsumer, KafkaProducer
+
 from stream.cli import main
 
 from ._kafka_helpers import ensure_topic
@@ -137,7 +138,7 @@ class TestStreamCLIIntegration:
         assert "Saved 50 trips to database" in result.output
 
     @patch("stream.trip_assembler.KafkaConsumer")
-    def test_consume_events_cli(self, mock_consumer_class):
+    def test_consume_events_cli(self, mock_consumer_class, kafka_bootstrap):
         """Test consume-events CLI command."""
         # Mock consumer
         mock_consumer = Mock()
