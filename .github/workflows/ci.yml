@@ -10,37 +10,12 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: test
-          POSTGRES_USER: test
-          POSTGRES_DB: test_chillflow
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
@@ -50,7 +25,7 @@ jobs:
         version: "latest"
 
     - name: Cache uv dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/uv
         key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
@@ -60,6 +35,27 @@ jobs:
     - name: Install dependencies
       run: |
         uv sync --all-extras
+
+    - name: Set up Docker Compose environment
+      run: |
+        # Create test environment file
+        cat > .env.test << EOF
+        POSTGRES_DB=test_chillflow
+        POSTGRES_USER=test
+        POSTGRES_PASSWORD=test
+        REDIS_URL=redis://localhost:6379
+        KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+        EOF
+
+    - name: Start infrastructure with Docker Compose
+      run: |
+        cd platform/compose
+        docker-compose up -d postgres redis kafka zookeeper
+        # Wait for services to be ready
+        sleep 30
+        # Check service health
+        docker-compose ps
 
     - name: Set up environment variables
       run: |
@@ -86,10 +82,16 @@ jobs:
       continue-on-error: true
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
         path: |
           .pytest_cache/
         retention-days: 7
+
+    - name: Cleanup Docker containers
+      if: always()
+      run: |
+        cd platform/compose
+        docker-compose down -v
