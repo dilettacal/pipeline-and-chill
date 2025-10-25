@@ -179,3 +179,80 @@ class TestBatchTripProducer:
 
             with pytest.raises(FileNotFoundError):
                 producer.process_month(non_existent_path)
+
+    @patch("batch.producer.get_db_session")
+    def test_process_batch_upsert(self, mock_get_session):
+        """Test batch processing with upsert functionality."""
+        # Mock session
+        mock_session = Mock()
+        mock_get_session.return_value = iter([mock_session])
+
+        with (
+            patch("batch.producer.get_database_client"),
+            patch("batch.producer.settings") as mock_settings,
+        ):
+            mock_settings.HASH_SALT = "test-salt"
+
+            producer = BatchTripProducer()
+
+            # Create test trips with same trip_key to test upsert
+            trips = [
+                {
+                    "trip_key": "duplicate_key",
+                    "vendor_id": 1,
+                    "vehicle_id_h": "test_vehicle_1",
+                    "pickup_ts": datetime(2025, 1, 1, 10, 0),
+                    "dropoff_ts": datetime(2025, 1, 1, 10, 30),
+                    "pu_zone_id": 229,
+                    "do_zone_id": 230,
+                    "passenger_count": 1,
+                    "rate_code": 1,
+                    "store_and_fwd_flag": "N",
+                    "fare_amount": 10.0,
+                    "total_amount": 12.0,
+                    "payment_type": 1,
+                    "tip_amount": 2.0,
+                    "tolls_amount": 0.0,
+                    "congestion_surcharge": 0.0,
+                    "airport_fee": 0.0,
+                    "distance_km": 5.0,
+                    "duration_min": 30.0,
+                    "avg_speed_kmh": 10.0,
+                    "last_update_ts": datetime.now(),
+                    "source": "test",
+                },
+                {
+                    "trip_key": "duplicate_key",  # Same key - should trigger upsert
+                    "vendor_id": 1,
+                    "vehicle_id_h": "test_vehicle_2",  # Different vehicle
+                    "pickup_ts": datetime(2025, 1, 1, 10, 0),
+                    "dropoff_ts": datetime(2025, 1, 1, 10, 30),
+                    "pu_zone_id": 229,
+                    "do_zone_id": 230,
+                    "passenger_count": 2,  # Different passenger count
+                    "rate_code": 1,
+                    "store_and_fwd_flag": "N",
+                    "fare_amount": 15.0,  # Different fare
+                    "total_amount": 18.0,
+                    "payment_type": 1,
+                    "tip_amount": 3.0,
+                    "tolls_amount": 0.0,
+                    "congestion_surcharge": 0.0,
+                    "airport_fee": 0.0,
+                    "distance_km": 8.0,
+                    "duration_min": 30.0,
+                    "avg_speed_kmh": 16.0,
+                    "last_update_ts": datetime.now(),
+                    "source": "test",
+                }
+            ]
+
+            # Test the upsert functionality
+            upserted, skipped = producer._process_batch(mock_session, trips)
+
+            # Should upsert both records (even though they have the same trip_key)
+            assert upserted == 2
+            assert skipped == 0
+            
+            # Verify that session.merge was called for each trip (for the upsert operation)
+            assert mock_session.merge.call_count == 2

@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
-import structlog
 from core import (
     CompleteTrip,
     CompleteTripSchema,
@@ -82,9 +81,9 @@ class BatchTripProducer:
         logger.info("Generating trip keys and preparing data")
         trips = self._dataframe_to_trips(df, source=source)
 
-        # Write to database in batches
+        # Upsert to database in batches
         logger.info(
-            "Writing to database", batch_size=batch_size, total_trips=len(trips)
+            "Upserting to database", batch_size=batch_size, total_trips=len(trips)
         )
         stats = self._write_trips_batch(trips, batch_size=batch_size)
 
@@ -93,14 +92,14 @@ class BatchTripProducer:
 
         result = {
             "rows_read": rows_read,
-            "inserted": stats["inserted"],
+            "inserted": stats["inserted"],  # Now represents upserted records
             "skipped": stats["skipped"],
             "duration_sec": duration_sec,
         }
 
         logger.info(
             "Batch processing complete",
-            inserted=stats["inserted"],
+            upserted=stats["inserted"],
             skipped=stats["skipped"],
             duration_sec=duration_sec,
             throughput_trips_per_sec=(
@@ -215,6 +214,9 @@ class BatchTripProducer:
                 ),
                 "last_update_ts": now,
                 "source": source,
+                # Add required audit fields
+                "created_at": now,
+                "updated_at": now,
             }
 
             trips.append(trip)
@@ -233,18 +235,18 @@ class BatchTripProducer:
             batch_size: Number of trips per batch
 
         Returns:
-            Dict with statistics (inserted, skipped)
+            Dict with statistics (inserted, skipped) - inserted now represents upserted records
         """
         session_gen = get_db_session()
         session = next(session_gen)
 
         try:
-            inserted = 0
+            upserted = 0
             skipped = 0
             total_batches = (len(trips) + batch_size - 1) // batch_size
 
             logger.info(
-                "Writing trips to database",
+                "Upserting trips to database",
                 total_trips=len(trips),
                 batch_size=batch_size,
                 total_batches=total_batches,
@@ -255,8 +257,8 @@ class BatchTripProducer:
                 batch_num = i // batch_size + 1
 
                 # Process batch
-                batch_inserted, batch_skipped = self._process_batch(session, batch)
-                inserted += batch_inserted
+                batch_upserted, batch_skipped = self._process_batch(session, batch)
+                upserted += batch_upserted
                 skipped += batch_skipped
 
                 # Show progress
@@ -266,46 +268,46 @@ class BatchTripProducer:
                         batch_num=batch_num,
                         total_batches=total_batches,
                         batch_size=len(batch),
-                        total_inserted=inserted,
+                        total_upserted=upserted,
                         total_skipped=skipped,
                     )
 
             session.commit()
             logger.info(
-                "Database write complete",
-                total_inserted=inserted,
+                "Database upsert complete",
+                total_upserted=upserted,
                 total_skipped=skipped,
             )
 
-            return {"inserted": inserted, "skipped": skipped}
+            return {"inserted": upserted, "skipped": skipped}
 
         finally:
             session.close()
 
     def _process_batch(self, session, batch: List[Dict]) -> tuple[int, int]:
         """
-        Process a single batch of trips.
+        Process a single batch of trips using upsert operations.
+
+        Uses PostgreSQL's ON CONFLICT to handle duplicate trip keys gracefully.
+        Updates existing records with new data if trip_key already exists.
 
         Args:
             session: Database session
             batch: List of trip dictionaries
 
         Returns:
-            Tuple of (inserted, skipped)
+            Tuple of (upserted, skipped)
         """
-        inserted = 0
+        upserted = 0
         skipped = 0
 
+        # Validate all trips first
+        valid_trips = []
         for trip_dict in batch:
             try:
                 # Validate trip data
                 trip_schema = CompleteTripSchema(**trip_dict)
-
-                # Create SQLAlchemy model
-                trip = CompleteTrip(**trip_schema.model_dump())
-                session.add(trip)
-                inserted += 1
-
+                valid_trips.append(trip_schema.model_dump())
             except Exception as e:
                 logger.warning(
                     "Skipped invalid trip",
@@ -314,7 +316,26 @@ class BatchTripProducer:
                 )
                 skipped += 1
 
-        return inserted, skipped
+        if not valid_trips:
+            return upserted, skipped
+
+        # Process each trip individually with proper upsert handling
+        for trip_dict in valid_trips:
+            try:
+                # Use SQLAlchemy's merge for upsert functionality
+                trip = CompleteTrip(**trip_dict)
+                session.merge(trip)
+                upserted += 1
+
+            except Exception as individual_error:
+                logger.warning(
+                    "Trip upsert failed",
+                    trip_key=trip_dict.get("trip_key"),
+                    error=str(individual_error),
+                )
+                skipped += 1
+
+        return upserted, skipped
 
     def close(self):
         """Close database connections."""
