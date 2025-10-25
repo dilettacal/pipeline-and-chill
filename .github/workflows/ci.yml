@@ -35,6 +35,23 @@ jobs:
         ports:
           - 6379:6379
 
+      redpanda:
+        image: redpandadata/redpanda:v24.1.7
+        ports:
+          - 9092:9092
+          - 9644:9644
+        options: >-
+          --health-cmd "bash -lc 'rpk cluster info --api-urls=localhost:9644 || exit 1'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+        command: >-
+          redpanda start
+          --overprovisioned --smp 1 --memory 512M --reserve-memory 0M
+          --node-id 0 --check=false
+          --kafka-addr PLAINTEXT://0.0.0.0:9092
+          --advertise-kafka-addr PLAINTEXT://127.0.0.1:9092
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -65,7 +82,8 @@ jobs:
       run: |
         echo "DATABASE_URL=postgresql+psycopg://test:test@localhost:5432/test_chillflow" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
-        echo "KAFKA_BOOTSTRAP_SERVERS=localhost:9092" >> $GITHUB_ENV
+        echo "KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:9092" >> $GITHUB_ENV
+        echo "TESTCONTAINERS_RYUK_DISABLED=false" >> $GITHUB_ENV
         echo "HASH_SALT=github-actions-test-salt" >> $GITHUB_ENV
 
     - name: Code Quality Checks
@@ -78,13 +96,13 @@ jobs:
         echo "🧪 Running comprehensive test suite..."
         uv run make test TYPE=all
 
-    - name: Run Integration Tests (if Docker available)
+    - name: Run Integration Tests
       run: |
-        echo "🐳 Running integration tests..."
-        echo "⚠️  Stream integration tests require Kafka - skipping in CI"
-        echo "✅ Running batch integration tests (PostgreSQL only)..."
-        uv run make test TYPE=batch-integration || echo "Batch integration tests skipped (Docker not available)"
-      continue-on-error: true
+        echo "🐳 Running integration tests with real Kafka (Redpanda)..."
+        echo "✅ Running stream integration tests with Kafka..."
+        uv run make test TYPE=stream-integration
+        echo "✅ Running batch integration tests with PostgreSQL..."
+        uv run make test TYPE=batch-integration
 
     # Test artifacts are not needed for this project
     # - name: Upload test results

@@ -6,6 +6,7 @@ with real Kafka and PostgreSQL instances.
 """
 
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 from typing import Generator
@@ -19,6 +20,66 @@ from testcontainers.postgres import PostgresContainer
 # =============================================================================
 # Test Environment Configuration
 # =============================================================================
+
+
+def _normalize_bootstrap(value: str | None) -> str:
+    """Normalize bootstrap server string and fix common issues."""
+    v = (value or "").strip()
+    # Guard against "l:9092" typo and other junk
+    if v == "l:9092":
+        return "localhost:9092"
+    if v.startswith("PLAINTEXT://"):
+        v = v.split("://", 1)[1]
+    return v or "localhost:9092"
+
+
+def _wait_for_kafka(bootstrap: str, timeout=30):
+    """Wait for Kafka to be ready by checking cluster info."""
+    from kafka import KafkaAdminClient
+
+    start = time.time()
+    last_err = None
+    while time.time() - start < timeout:
+        try:
+            admin = KafkaAdminClient(bootstrap_servers=bootstrap, client_id="test-admin")
+            admin.list_topics()
+            admin.close()
+            return
+        except Exception as e:
+            last_err = e
+            time.sleep(1)
+    raise TimeoutError(f"Kafka not ready at {bootstrap}: {last_err}")
+
+
+@pytest.fixture(scope="session")
+def kafka_bootstrap() -> str:
+    """
+    Prefer an existing broker via env (CI Redpanda).
+    Otherwise, spin up Testcontainers Kafka for local/dev runs.
+    """
+    bs = _normalize_bootstrap(os.getenv("KAFKA_BOOTSTRAP_SERVERS"))
+
+    # If we have a specific bootstrap server (CI), use it
+    if bs != "localhost:9092" or os.getenv("USE_TESTCONTAINERS", "false").lower() in ("1", "true"):
+        # Use the provided broker (CI path)
+        _wait_for_kafka(bs, timeout=60)
+        return bs
+
+    # For local development, use testcontainers
+    try:
+        from testcontainers.core.waiting_utils import wait_for_logs
+        from testcontainers.kafka import KafkaContainer
+
+        # Start ephemeral Kafka with sane defaults
+        with KafkaContainer() as kafka:
+            bs = _normalize_bootstrap(kafka.get_bootstrap_server())
+            _wait_for_kafka(bs, timeout=60)
+            yield bs
+            return
+    except Exception:
+        # If testcontainers missing or fails, try the env/default
+        _wait_for_kafka(bs, timeout=60)
+        return bs
 
 
 @pytest.fixture(scope="session")
@@ -114,9 +175,9 @@ def db_session(db_connection):
 
 
 @pytest.fixture
-def kafka_bootstrap_servers(kafka_container):
+def kafka_bootstrap_servers(kafka_bootstrap):
     """Kafka bootstrap servers for integration tests."""
-    return kafka_container.get_bootstrap_server()
+    return kafka_bootstrap
 
 
 @pytest.fixture
@@ -166,6 +227,27 @@ def kafka_consumer(kafka_bootstrap_servers, kafka_topic):
 def kafka_topic():
     """Unique test topic name to avoid message cross-contamination."""
     return f"test-trips-{uuid.uuid4().hex[:8]}"
+
+
+@pytest.fixture
+def ensure_kafka_topic(kafka_bootstrap_servers, kafka_topic):
+    """Ensure Kafka topic exists before tests run."""
+    from kafka.admin import KafkaAdminClient, NewTopic
+
+    admin = KafkaAdminClient(bootstrap_servers=kafka_bootstrap_servers, client_id="test-admin")
+    existing = set(admin.list_topics())
+
+    if kafka_topic not in existing:
+        try:
+            admin.create_topics(
+                [NewTopic(name=kafka_topic, num_partitions=1, replication_factor=1)]
+            )
+        except Exception:
+            # Topic might appear due to race; ignore if already exists
+            pass
+
+    admin.close()
+    return kafka_topic
 
 
 # =============================================================================
