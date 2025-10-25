@@ -12,6 +12,7 @@ import click
 import pandas as pd
 from core import get_logger as get_core_logger
 from core.clients.database import get_db_session
+from core.metrics import get_metrics_response
 from sqlalchemy import text
 
 from .trip_assembler import TripAssembler
@@ -310,6 +311,39 @@ def ingest_events(
 
     except Exception as e:
         logger.error("Event ingestion failed", error=str(e))
+        click.echo(f"❌ Error: {e}")
+        raise click.Abort()
+
+
+@main.command()
+def metrics():
+    """Expose Prometheus metrics endpoint."""
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class MetricsHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/metrics":
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain; charset=utf-8")
+                self.end_headers()
+                metrics_data, content_type = get_metrics_response()
+                self.wfile.write(metrics_data)
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+    def run_server():
+        server = HTTPServer(("0.0.0.0", 8000), MetricsHandler)
+        logger.info("Metrics server started on port 8000")
+        server.serve_forever()
+
+    try:
+        click.echo("🚀 Starting metrics server on http://localhost:8000/metrics")
+        run_server()
+    except KeyboardInterrupt:
+        click.echo("📊 Metrics server stopped")
+    except Exception as e:
+        logger.error("Metrics server failed", error=str(e))
         click.echo(f"❌ Error: {e}")
         raise click.Abort()
 

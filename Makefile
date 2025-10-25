@@ -8,7 +8,7 @@ YEAR ?= 2025
 MONTH ?= 01
 CURATED_PATH := data/curated/yellow/$(YEAR)/$(MONTH)/yellow_tripdata_$(YEAR)-$(MONTH).parquet
 
-.PHONY: help env db test pipeline pipeline-ingestion pipeline-batch pipeline-stream pipeline-analytics pipeline-full redis stream unit infra stream-integration batch batch-integration contracts smoke performance all produce assemble consume topic produce-continuous redis redis-continuous lint check fix update start stop logs cli test up up-observability down clean setup db-clean
+.PHONY: help env db test pipeline pipeline-ingestion pipeline-batch pipeline-stream pipeline-analytics pipeline-full redis stream unit infra stream-integration batch batch-integration contracts smoke performance all produce assemble consume topic produce-continuous redis redis-continuous lint check fix update start stop logs cli test up up-observability down clean setup db-clean db-shell shell observability frontend
 
 help: ## Show this help message
 	@echo "ChillFlow Platform Development Commands:"
@@ -30,7 +30,11 @@ env: ## Environment operations (usage: make env <operation>)
 			echo "📝 Creating .env file from template..."; \
 			cp platform/compose/env.example platform/compose/.env; \
 		fi; \
-		cd platform/compose && docker-compose $$PROFILE_FLAG up -d postgres redis zookeeper kafka; \
+		cd platform/compose && docker-compose $$PROFILE_FLAG up -d postgres redis zookeeper kafka >/dev/null 2>&1; \
+		echo "⏳ Waiting for services to be ready..."; \
+		sleep 5; \
+		echo "🔧 Setting up database schema..."; \
+		cd $(PROJECT_ROOT) && uv run python backend/chillflow-core/core/migrations/setup_database.py >/dev/null 2>&1; \
 		echo "✅ Infrastructure ready!"; \
 		echo "   📊 Database: postgresql://dev:dev@localhost:5432/chillflow"; \
 		echo "   🔴 Redis: redis://localhost:6379/0"; \
@@ -38,7 +42,7 @@ env: ## Environment operations (usage: make env <operation>)
 		echo "   🐘 Zookeeper: localhost:2181"; \
 	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "down" ]; then \
 		echo "🛑 Stopping ChillFlow infrastructure..."; \
-		cd platform/compose && docker-compose down; \
+		cd platform/compose && docker-compose down >/dev/null 2>&1; \
 		echo "✅ Infrastructure stopped"; \
 	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "clean" ]; then \
 		echo "🧹 Cleaning up everything..."; \
@@ -105,8 +109,14 @@ db: ## Database operations (usage: make db <operation>)
 		echo "   make db clean  - Clear database tables"; \
 		echo "   make db shell  - Connect to PostgreSQL shell"; \
 		echo ""; \
-		echo "🗄️  Running db shell by default..."; \
-		docker exec -it chillflow-postgres psql -U dev -d chillflow; \
+		echo "📊 Example queries to run in the database shell:"; \
+		echo "   \\dt stg.*                    - List staging tables"; \
+		echo "   \\dt dim.*                    - List dimension tables"; \
+		echo "   SELECT COUNT(*) FROM stg.complete_trip;  - Count trips"; \
+		echo "   SELECT * FROM dim.zone LIMIT 5;           - Show zones"; \
+		echo "   \\q                           - Exit shell"; \
+		echo ""; \
+		echo "🗄️  Please specify a database operation to run."; \
 	fi
 
 # Make the database operations available as targets
@@ -229,7 +239,7 @@ pipeline: ## Pipeline operations (usage: make pipeline <type>)
 	fi
 
 # Individual pipeline commands
-pipeline-ingestion: ## Run data ingestion pipeline
+pipeline-ingestion:
 	@echo "📥 Running data ingestion pipeline..."
 	@echo "  1. Running database migrations..."
 	@cd backend/chillflow-core/core/migrations && uv run alembic upgrade head
@@ -247,7 +257,7 @@ pipeline-ingestion: ## Run data ingestion pipeline
 	@uv run python scripts/data-management/curate_all_data.py --data-root data
 	@echo "✅ Ingestion complete!"
 
-pipeline-batch: ## Run batch processing pipeline
+pipeline-batch:
 	@echo "🔄 Running batch processing pipeline..."
 	@echo "  1. Processing curated trip data..."
 	@uv run python -m batch process trips $(CURATED_PATH)
@@ -255,7 +265,7 @@ pipeline-batch: ## Run batch processing pipeline
 	@uv run python -m batch aggregate run
 	@echo "✅ Batch processing complete!"
 
-pipeline-stream: ## Run streaming pipeline (produce events + assemble trips)
+pipeline-stream:
 	@echo "🌊 Running streaming pipeline..."
 	@echo "  1. Creating Kafka topic..."
 	@uv run python -m stream.cli create-topic --topic trip-events
@@ -265,7 +275,7 @@ pipeline-stream: ## Run streaming pipeline (produce events + assemble trips)
 	@uv run python -m stream.cli assemble-trips --topic trip-events --timeout 10
 	@echo "✅ Streaming pipeline complete!"
 
-pipeline-analytics: ## Run analytics pipeline
+pipeline-analytics:
 	@echo "📊 Running analytics pipeline..."
 	@echo "  1. Computing zone hourly KPIs..."
 	@uv run python -m batch aggregate run
@@ -273,7 +283,7 @@ pipeline-analytics: ## Run analytics pipeline
 	@uv run python scripts/analytics/generate_reports.py
 	@echo "✅ Analytics complete!"
 
-pipeline-full: ## Run complete end-to-end pipeline
+pipeline-full:
 	@echo "🚀 Running complete data pipeline..."
 	@echo "  📥 Ingestion: Download, seed zones, curate data"
 	@if [ -f scripts/data-management/download_nyc_data.sh ]; then \
@@ -400,4 +410,104 @@ redis: ## Redis operations (usage: make redis <operation>)
 
 # Make the Redis operations available as targets
 start stop cli:
+	@:
+
+# Observability operations
+observability: ## Observability operations (usage: make observability <operation>)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "up" ]; then \
+		echo "🚀 Starting ChillFlow Observatory..."; \
+		docker-compose -f platform/compose/docker-compose.yml -f platform/compose/docker-compose.observability.yml --profile observability up -d >/dev/null 2>&1; \
+		echo "⏳ Waiting for monitoring services to be ready..."; \
+		sleep 10; \
+		echo "✅ Observatory started!"; \
+		echo ""; \
+		echo "📊 Access your dashboards:"; \
+		echo "   Grafana:    http://localhost:3000 (admin/admin)"; \
+		echo "   Prometheus: http://localhost:9090"; \
+		echo "   Loki:       http://localhost:3100"; \
+		echo ""; \
+		echo "🔍 Dashboards available:"; \
+		echo "   Infrastructure Health: http://localhost:3000/d/infrastructure-health"; \
+		echo "   Live Logs:            http://localhost:3000/d/live-logs"; \
+		echo "   Pipeline Metrics:     http://localhost:3000/d/pipeline-metrics"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "down" ]; then \
+		echo "🛑 Stopping ChillFlow Observatory..."; \
+		docker-compose -f platform/compose/docker-compose.yml -f platform/compose/docker-compose.observability.yml --profile observability down >/dev/null 2>&1; \
+		echo "✅ Observatory stopped!"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "status" ]; then \
+		echo "📊 ChillFlow Observatory Status:"; \
+		echo ""; \
+		echo "🔍 Grafana:"; \
+		curl -s http://localhost:3000/api/health >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"; \
+		echo ""; \
+		echo "📈 Prometheus:"; \
+		curl -s http://localhost:9090/-/healthy >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"; \
+		echo ""; \
+		echo "📋 Loki:"; \
+		curl -s http://localhost:3100/ready >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"; \
+		echo ""; \
+		echo "📊 cAdvisor:"; \
+		curl -s http://localhost:8080/healthz >/dev/null 2>&1 && echo "  ✅ Running" || echo "  ❌ Not running"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "logs" ]; then \
+		echo "📋 Observatory logs:"; \
+		docker-compose -f platform/compose/docker-compose.yml -f platform/compose/docker-compose.observability.yml --profile observability logs -f; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "metrics" ]; then \
+		echo "📊 Starting metrics server..."; \
+		cd $(PROJECT_ROOT)/backend/chillflow-stream && uv run python -m stream.cli metrics; \
+	else \
+		echo "🔍 You have not specified an observability operation. Available operations:"; \
+		echo "   make observability up      - Start monitoring stack"; \
+		echo "   make observability down   - Stop monitoring stack"; \
+		echo "   make observability status - Check monitoring status"; \
+		echo "   make observability logs    - Show monitoring logs"; \
+		echo "   make observability metrics - Start metrics server"; \
+		echo ""; \
+		echo "🔍 Please specify an observability operation to run."; \
+	fi
+
+# Frontend commands
+frontend:
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "streamlit" ]; then \
+		echo "🌊 Starting Streamlit Dashboard..."; \
+		cd $(PROJECT_ROOT) && uv run streamlit run frontend/streamlit/dashboard.py --server.port 8501 --server.address 0.0.0.0; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "ai" ]; then \
+		echo "🤖 Starting AI-Powered Dashboard..."; \
+		cd $(PROJECT_ROOT) && uv run streamlit run frontend/streamlit/dashboard_ai.py --server.port 8502 --server.address 0.0.0.0; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "react" ]; then \
+		echo "⚛️ Starting React Dashboard..."; \
+		cd $(PROJECT_ROOT)/frontend/react && npx vite; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "install" ]; then \
+		echo "📦 Installing frontend dependencies..."; \
+		cd $(PROJECT_ROOT) && uv pip install streamlit plotly requests openai anthropic; \
+		cd $(PROJECT_ROOT)/frontend/react && npm install; \
+		echo "✅ Frontend dependencies installed!"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "build" ]; then \
+		echo "🏗️ Building frontend..."; \
+		cd $(PROJECT_ROOT)/frontend/react && npx vite build; \
+		echo "✅ Frontend built!"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "dev" ]; then \
+		echo "🚀 Starting development environment..."; \
+		echo "   Streamlit: http://localhost:8501"; \
+		echo "   React:     http://localhost:3000"; \
+		echo "   Metrics:   http://localhost:8000"; \
+		echo ""; \
+		echo "💡 Run 'make observability metrics' in another terminal for metrics"; \
+	elif [ "$(filter-out $@,$(MAKECMDGOALS))" = "test" ]; then \
+		echo "🧪 Running frontend tests..."; \
+		cd $(PROJECT_ROOT)/frontend/react && npx vitest run; \
+	else \
+		echo "🎨 You have not specified a frontend operation. Available operations:"; \
+		echo "   make frontend streamlit  - Start Streamlit dashboard"; \
+		echo "   make frontend ai         - Start AI-powered dashboard"; \
+		echo "   make frontend react      - Start React dashboard"; \
+		echo "   make frontend install    - Install all dependencies"; \
+		echo "   make frontend build      - Build for production"; \
+		echo "   make frontend dev        - Start development environment"; \
+		echo "   make frontend test       - Run frontend tests"; \
+		echo ""; \
+		echo "🎨 Please specify a frontend operation to run."; \
+	fi
+
+# Make the observability operations available as targets
+metrics:
 	@:

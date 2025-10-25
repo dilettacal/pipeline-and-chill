@@ -1,0 +1,127 @@
+groups:
+- name: chillflow-mvp
+  rules:
+  # Service Health
+  - alert: ServiceDown
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: critical
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "Service {{ $labels.job }} is down"
+      description: "Target {{ $labels.instance }} has been down for more than 2 minutes"
+
+  - alert: ServiceHighLatency
+    expr: up == 1 and (up - up{job="prometheus"}) > 0
+    for: 5m
+    labels:
+      severity: warning
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "Service {{ $labels.job }} has high latency"
+      description: "Target {{ $labels.instance }} is responding slowly"
+
+  # Application Metrics
+  - alert: HighErrorRate
+    expr: |
+      sum(rate(http_requests_total{status=~"5.."}[5m]))
+      / clamp_min(sum(rate(http_requests_total[5m])), 1) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High HTTP 5xx error rate"
+      description: "HTTP 5xx errors > 5% for 5 minutes"
+
+  - alert: TripProcessingLag
+    expr: queue_lag_seconds > 30
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Trip processing lag is high"
+      description: "Queue lag is {{ $value }} seconds"
+
+  - alert: DataQualityFailures
+    expr: rate(dq_failures_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Data quality failures detected"
+      description: "DQ failure rate is {{ $value }} failures/sec"
+
+  # Infrastructure Alerts
+  - alert: KafkaConsumerLagHigh
+    expr: kafka_consumergroup_lag{consumergroup!=""} > 5000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Kafka consumer lag is high"
+      description: "Consumer group {{ $labels.consumergroup }} lag is {{ $value }}"
+
+  - alert: PostgresLatencyHigh
+    expr: pg_stat_database_blks_hit / clamp_min(pg_stat_database_blks_read, 1) < 0.95
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "PostgreSQL cache hit ratio degraded"
+      description: "Cache hit ratio is {{ $value | humanizePercentage }}"
+
+  - alert: PostgresConnectionsHigh
+    expr: pg_stat_database_numbackends > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "PostgreSQL connection count is high"
+      description: "Database has {{ $value }} active connections"
+
+  - alert: RedisEvictions
+    expr: redis_evicted_keys_total > 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis is evicting keys"
+      description: "Redis has evicted {{ $value }} keys due to memory pressure"
+
+  - alert: RedisMemoryHigh
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Redis memory usage is high"
+      description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+  # System Resources
+  - alert: ContainerCpuHigh
+    expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container CPU usage is high"
+      description: "Container {{ $labels.name }} CPU usage is {{ $value | humanizePercentage }}"
+
+  - alert: ContainerMemoryHigh
+    expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container memory usage is high"
+      description: "Container {{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+
+  - alert: DiskSpaceLow
+    expr: (1 - node_filesystem_avail_bytes / node_filesystem_size_bytes) > 0.9
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Disk usage is high"
+      description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
